@@ -15,5 +15,7 @@ namespace EcoPulse.Api.Models
          public DateTime FechaEntrega { get; set; }
          public int PuntosGenerados { get; set; }
 
+    public virtual Usuario Usuario { get; set; }
+    public virtual CentroAcopio CentroAcopio { get; set; }
     }
 }

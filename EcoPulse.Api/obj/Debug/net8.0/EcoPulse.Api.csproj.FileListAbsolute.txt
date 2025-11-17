@@ -109,3 +109,4 @@ C:\Proyectos\EcoPulse\EcoPulse.Api\obj\Debug\net8.0\refint\EcoPulse.Api.dll
 C:\Proyectos\EcoPulse\EcoPulse.Api\obj\Debug\net8.0\EcoPulse.Api.pdb
 C:\Proyectos\EcoPulse\EcoPulse.Api\obj\Debug\net8.0\EcoPulse.Api.genruntimeconfig.cache
 C:\Proyectos\EcoPulse\EcoPulse.Api\obj\Debug\net8.0\ref\EcoPulse.Api.dll
+C:\Proyectos\EcoPulse\EcoPulse.Api\obj\Debug\net8.0\EcoPulse.Api.sourcelink.json

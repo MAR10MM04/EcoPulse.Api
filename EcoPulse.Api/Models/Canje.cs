@@ -1,18 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace EcoPulse.Api.Models
 {
     public class Canje
     {
+        [Key]
         public int IdCanje { get; set; }
-        public int IdUsuario { get; set; }
-        public int IdRecompensa { get; set; }
-        public string QRCode { get; set; }
-        public DateTime FechaCanje { get; set; }
-        public string Estado { get; set; }
-        
     }
 }

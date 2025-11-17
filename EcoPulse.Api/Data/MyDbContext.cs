@@ -18,8 +18,41 @@ namespace EcoPulse.Api.Data
         public DbSet<Canje> Canjes { get; set; }
         public DbSet<CentroAcopio> CentrosAcopio { get; set; }
         public DbSet<Comercio> Comercios { get; set; }
+   protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
 
+        // RELACIÓN 1:N - Usuario a Entrega
+        modelBuilder.Entity<Usuario>()
+            .HasMany(u => u.Entregas)
+            .WithOne(e => e.Usuario)
+            .HasForeignKey(e => e.IdUsuario)
+            .OnDelete(DeleteBehavior.Restrict); // o Cascade según tu necesidad
+
+        // RELACIÓN 1:1 - Usuario a CentroAcopio
+        modelBuilder.Entity<Usuario>()
+            .HasOne(u => u.CentroAcopio)
+            .WithOne(c => c.Usuario)
+            .HasForeignKey<CentroAcopio>(c => c.IdUsuario)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Configuraciones adicionales para CentroAcopio
+        modelBuilder.Entity<CentroAcopio>()
+            .HasIndex(c => c.IdUsuario)
+            .IsUnique(); // Asegura que sea relación 1:1
+
+        // Configuración de claves primarias
+        modelBuilder.Entity<Usuario>()
+            .HasKey(u => u.IdUsuario);
+
+        modelBuilder.Entity<Entrega>()
+            .HasKey(e => e.IdEntrega);
+
+        modelBuilder.Entity<CentroAcopio>()
+            .HasKey(c => c.IdCentroAcopio);
+    }
 
 
     }
+    
 }
