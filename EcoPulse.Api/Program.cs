@@ -1,15 +1,17 @@
 using Microsoft.EntityFrameworkCore;
 using EcoPulse.Api.Data;
-
+using EcoPulse.Api.Models;
+using EcoPulse.Api;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddControllers(); // 👈 NECESARIO PARA CONTROLLERS
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// CONFIGURACIÓN MEJORADA DE MYSQL CON MANEJO DE ERRORES
-builder.Services.AddDbContext<AppDbContext>(options =>
+// CONFIGURACIÓN DE MYSQL
+builder.Services.AddDbContext<MyDbContext>(options =>
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
     
@@ -30,7 +32,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
                 errorNumbersToAdd: null);
         });
     
-    // Logging solo en desarrollo
     if (builder.Environment.IsDevelopment())
     {
         options.LogTo(Console.WriteLine, LogLevel.Information);
@@ -39,31 +40,24 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 var app = builder.Build();
 
-// Middleware para probar conexión a BD
-app.Use(async (context, next) =>
+// Middleware de health check
+app.MapGet("/health", async (context) =>
 {
-    if (context.Request.Path == "/health")
+    try
     {
-        try
-        {
-            using var scope = app.Services.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var canConnect = await dbContext.Database.CanConnectAsync();
-            
-            await context.Response.WriteAsync($"Database Health: {(canConnect ? "Healthy" : "Unhealthy")}");
-            return;
-        }
-        catch (Exception ex)
-        {
-            await context.Response.WriteAsync($"Database Health: Error - {ex.Message}");
-            return;
-        }
+        using var scope = app.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<MyDbContext>();
+        var canConnect = await dbContext.Database.CanConnectAsync();
+
+        await context.Response.WriteAsync($"Database Health: {(canConnect ? "Healthy" : "Unhealthy")}");
     }
-    
-    await next();
+    catch (Exception ex)
+    {
+        await context.Response.WriteAsync($"Database Health: Error - {ex.Message}");
+    }
 });
 
-// Configure the HTTP request pipeline.
+// Swagger para desarrollo
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -72,18 +66,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-   
-})
-.WithName("GetWeatherForecast");
+// 👇 NECESARIO PARA QUE FUNCIONEN TUS CONTROLLERS
+app.MapControllers(); 
 
 app.Run();
-
-
-
