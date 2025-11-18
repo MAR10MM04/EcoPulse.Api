@@ -51,7 +51,7 @@ Visual Studio Code/2022 🔧
 ⚙️ Configuración del Backend (.NET 8 API)
 bash
 # Clonar el repositorio
-git clone https://github.com/uteq-candelaria/ecopulse.git
+
 cd EcoPulse/Backend
 
 # Instalar dependencias críticas
