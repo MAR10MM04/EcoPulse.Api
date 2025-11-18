@@ -6,7 +6,7 @@ using EcoPulse.Api;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllers(); // 👈 NECESARIO PARA CONTROLLERS
+builder.Services.AddControllers(); 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

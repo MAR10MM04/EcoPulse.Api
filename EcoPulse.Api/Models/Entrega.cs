@@ -17,5 +17,6 @@ namespace EcoPulse.Api.Models
 
     public virtual Usuario Usuario { get; set; }
     public virtual CentroAcopio CentroAcopio { get; set; }
+    public virtual Material Material { get; set; }
     }
 }

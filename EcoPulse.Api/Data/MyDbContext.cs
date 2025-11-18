@@ -38,6 +38,20 @@ namespace EcoPulse.Api.Data
             .HasForeignKey<CentroAcopio>(c => c.IdUsuario)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // RELACIÓN 1:N - Material a Entrega
+        modelBuilder.Entity<Material>()
+            .HasMany(m => m.Entregas)
+            .WithOne(e => e.Material)
+            .HasForeignKey(e => e.IdMaterial)
+            .OnDelete(DeleteBehavior.Restrict);
+       // RELACIÓN 1:N - CentroAcopio a Entrega
+        modelBuilder.Entity<CentroAcopio>()
+            .HasMany(c => c.Entregas)
+            .WithOne(e => e.CentroAcopio)
+            .HasForeignKey(e => e.IdCentroAcopio)
+            .OnDelete(DeleteBehavior.Restrict);
+
+
         // Configuraciones adicionales para CentroAcopio
         modelBuilder.Entity<CentroAcopio>()
             .HasIndex(c => c.IdUsuario)
@@ -52,9 +66,12 @@ namespace EcoPulse.Api.Data
 
         modelBuilder.Entity<CentroAcopio>()
             .HasKey(c => c.IdCentroAcopio);
+
+        modelBuilder.Entity<Material>()
+            .HasKey(m => m.IdMaterial);
     }
 
 
     }
-    
+
 }

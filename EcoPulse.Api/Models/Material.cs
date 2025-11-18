@@ -13,5 +13,7 @@ namespace EcoPulse.Api.Models
         public string Nombre { get; set; }
         public string FactorPuntos { get; set; }
 
+        public virtual ICollection<Entrega> Entregas { get; set; }
     }
+    
 }
