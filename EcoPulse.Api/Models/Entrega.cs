@@ -9,7 +9,7 @@ namespace EcoPulse.Api.Models
     {
         public int IdEntrega { get; set; }
         public int IdUsuario { get; set; }
-        public int IdMaterial { get; set; }
+        public int IdMaterial { get; set; } 
         public int IdCentroAcopio { get; set; }
         public double Cantidad { get; set; }
          public DateTime FechaEntrega { get; set; }

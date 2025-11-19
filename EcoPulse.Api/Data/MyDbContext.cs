@@ -29,7 +29,7 @@ namespace EcoPulse.Api.Data
             .HasMany(u => u.Entregas)
             .WithOne(e => e.Usuario)
             .HasForeignKey(e => e.IdUsuario)
-            .OnDelete(DeleteBehavior.Restrict); // o Cascade según tu necesidad
+            .OnDelete(DeleteBehavior.Restrict); 
 
         // RELACIÓN 1:1 - Usuario a CentroAcopio
         modelBuilder.Entity<Usuario>()

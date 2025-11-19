@@ -110,3 +110,13 @@ C:\Proyectos\EcoPulse\EcoPulse.Api\obj\Debug\net8.0\EcoPulse.Api.pdb
 C:\Proyectos\EcoPulse\EcoPulse.Api\obj\Debug\net8.0\EcoPulse.Api.genruntimeconfig.cache
 C:\Proyectos\EcoPulse\EcoPulse.Api\obj\Debug\net8.0\ref\EcoPulse.Api.dll
 C:\Proyectos\EcoPulse\EcoPulse.Api\obj\Debug\net8.0\EcoPulse.Api.sourcelink.json
+C:\Proyectos\EcoPulse\EcoPulse.Api\bin\Debug\net8.0\BCrypt.Net-Next.dll
+C:\Proyectos\EcoPulse\EcoPulse.Api\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+C:\Proyectos\EcoPulse\EcoPulse.Api\bin\Debug\net8.0\Microsoft.Bcl.Memory.dll
+C:\Proyectos\EcoPulse\EcoPulse.Api\bin\Debug\net8.0\Microsoft.IdentityModel.Abstractions.dll
+C:\Proyectos\EcoPulse\EcoPulse.Api\bin\Debug\net8.0\Microsoft.IdentityModel.JsonWebTokens.dll
+C:\Proyectos\EcoPulse\EcoPulse.Api\bin\Debug\net8.0\Microsoft.IdentityModel.Logging.dll
+C:\Proyectos\EcoPulse\EcoPulse.Api\bin\Debug\net8.0\Microsoft.IdentityModel.Protocols.dll
+C:\Proyectos\EcoPulse\EcoPulse.Api\bin\Debug\net8.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+C:\Proyectos\EcoPulse\EcoPulse.Api\bin\Debug\net8.0\Microsoft.IdentityModel.Tokens.dll
+C:\Proyectos\EcoPulse\EcoPulse.Api\bin\Debug\net8.0\System.IdentityModel.Tokens.Jwt.dll

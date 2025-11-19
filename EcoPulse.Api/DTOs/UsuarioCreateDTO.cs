@@ -2,6 +2,9 @@
 
 
 
+using System.ComponentModel.DataAnnotations;
+using EcoPulse.Controllers;
+
 namespace EcoPulse.Api.DTOs
 {
     public class UsuarioCreateDTO
@@ -9,7 +12,7 @@ namespace EcoPulse.Api.DTOs
         public string Nombre { get; set; }
         public string Email { get; set; }
         public string Password { get; set; }
-        public string Rol { get; set; }
+       
     }
 
       public class UsuarioUpdateDTO
@@ -18,12 +21,17 @@ namespace EcoPulse.Api.DTOs
         public string Email { get; set; }
         public string Rol { get; set; }
     }
-    public class UsuarioResponseDTO
-    {
-        public int IdUsuario { get; set; }
-        public string Nombre { get; set; }
-        public string Email { get; set; }
-        public string Rol { get; set; }
-        public int PuntosTotales { get; set; }
-    }
+  
+    
+        public class LoginDto
+        {
+            [Required(ErrorMessage = "El email es obligatorio")]
+            [EmailAddress(ErrorMessage = "Formato inválido")]
+            public required string Email { get; set; }
+
+            [Required(ErrorMessage = "La contraseña es obligatoria")]
+            [DataType(DataType.Password)]
+            public required string Password { get; set; }
+        }
+
 }

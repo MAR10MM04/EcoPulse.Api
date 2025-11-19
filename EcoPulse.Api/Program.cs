@@ -1,28 +1,62 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using EcoPulse.Api.Data;
-using EcoPulse.Api.Models;
-using EcoPulse.Api;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
-builder.Services.AddControllers(); 
+// 1. CONFIGURACIÓN DE CONTROLLERS, SWAGGER, CORS
+builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(); 
 
-// CONFIGURACIÓN DE MYSQL
+// CORS (opcional)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod());
+});
+
+// 2. CONFIGURACIÓN JWT (sigue igual)-
+
+var jwtKey = builder.Configuration["Jwt:Key"];
+
+if (string.IsNullOrEmpty(jwtKey))
+    throw new Exception("❌ ERROR: Falta Jwt:Key en appsettings.json");
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])
+            )
+        };
+    });
+
+builder.Services.AddAuthorization();
+
+// 3. CONFIGURACIÓN DE MYSQL
+
 builder.Services.AddDbContext<MyDbContext>(options =>
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    
+
     if (string.IsNullOrEmpty(connectionString))
-    {
         throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-    }
 
     Console.WriteLine($"🔗 Attempting to connect to: {connectionString.Replace("Password=*", "Password=***")}");
 
-    options.UseMySql(connectionString, 
+    options.UseMySql(connectionString,
         ServerVersion.AutoDetect(connectionString),
         mysqlOptions =>
         {
@@ -31,16 +65,15 @@ builder.Services.AddDbContext<MyDbContext>(options =>
                 maxRetryDelay: TimeSpan.FromSeconds(5),
                 errorNumbersToAdd: null);
         });
-    
+
     if (builder.Environment.IsDevelopment())
-    {
         options.LogTo(Console.WriteLine, LogLevel.Information);
-    }
 });
 
-var app = builder.Build();
 
-// Middleware de health check
+// 4. BUILD + MIDDLEWARE
+var app = builder.Build();
+// Endpoint health check
 app.MapGet("/health", async (context) =>
 {
     try
@@ -48,7 +81,6 @@ app.MapGet("/health", async (context) =>
         using var scope = app.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<MyDbContext>();
         var canConnect = await dbContext.Database.CanConnectAsync();
-
         await context.Response.WriteAsync($"Database Health: {(canConnect ? "Healthy" : "Unhealthy")}");
     }
     catch (Exception ex)
@@ -57,16 +89,21 @@ app.MapGet("/health", async (context) =>
     }
 });
 
-// Swagger para desarrollo
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(); 
 }
 
 app.UseHttpsRedirection();
 
-// 👇 NECESARIO PARA QUE FUNCIONEN TUS CONTROLLERS
-app.MapControllers(); 
+// CORS
+app.UseCors("AllowAll");
+
+// Mantener autenticación y autorización para API real
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
 
 app.Run();
