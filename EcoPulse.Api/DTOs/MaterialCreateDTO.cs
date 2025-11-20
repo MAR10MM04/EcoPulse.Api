@@ -7,13 +7,13 @@ namespace EcoPulse.Api.DTOs
 {
     public class MaterialCreateDTO
     {
-        public string Nombre { get; set; }
-        public string FactorPuntos { get; set; }
+        public required string Nombre { get; set; }
+        public required string FactorPuntos { get; set; }
 }
   public class MaterialUpdateDTO
     {
-        public string Nombre { get; set; }
-        public string FactorPuntos { get; set; }
+        public required string Nombre { get; set; }
+        public required string FactorPuntos { get; set; }
         
     }
     public class MaterialResponseDTO

@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using EcoPulse.Api.Data;
 using EcoPulse.Api.Models;
-using EcoPulse.Api.DTOs;
 
 namespace EcoPulse.Api.Controllers
 {
@@ -17,7 +16,32 @@ namespace EcoPulse.Api.Controllers
             _context = context;
         }
 
-     
+        // ================================
+        // DTOs DENTRO DEL CONTROLLER
+        // ================================
+
+        public class EntregaCreateDTO
+        {
+            public int IdUsuario { get; set; }
+            public int IdMaterial { get; set; }
+            public int IdCentroAcopio { get; set; }
+            public double Cantidad { get; set; }
+        }
+
+        public class EntregaResponseDTO
+        {
+            public int IdEntrega { get; set; }
+            public int IdUsuario { get; set; }
+            public int IdMaterial { get; set; }
+            public int IdCentroAcopio { get; set; }
+            public double Cantidad { get; set; }
+            public DateTime FechaEntrega { get; set; }
+            public int PuntosGenerados { get; set; }
+        }
+
+        // ================================
+        // GET: api/entrega
+        // ================================
         [HttpGet]
         public async Task<ActionResult<IEnumerable<object>>> GetEntregas()
         {
@@ -40,6 +64,9 @@ namespace EcoPulse.Api.Controllers
             return Ok(entregas);
         }
 
+        // ================================
+        // GET: api/entrega/5
+        // ================================
         [HttpGet("{id}")]
         public async Task<ActionResult<object>> GetEntrega(int id)
         {
@@ -66,44 +93,44 @@ namespace EcoPulse.Api.Controllers
             return Ok(entrega);
         }
 
-    
+        // ================================
+        // POST: api/entrega
+        // ================================
         [HttpPost]
-        public async Task<ActionResult> CreateEntrega([FromBody] EntregaCreateDto dto)
+        public async Task<ActionResult<EntregaResponseDTO>> CrearEntrega([FromBody] EntregaCreateDTO dto)
         {
-            // Verificar relaciones
-            var usuario = await _context.Usuarios.FindAsync(dto.IdUsuario);
-            if (usuario == null) return BadRequest("El usuario no existe.");
-
-            var material = await _context.Materiales.FindAsync(dto.IdMaterial);
-            if (material == null) return BadRequest("El material no existe.");
-
-            var centro = await _context.CentrosAcopio.FindAsync(dto.IdCentroAcopio);
-            if (centro == null) return BadRequest("El centro de acopio no existe.");
-            // Cálculo de puntos
-            int puntos = 0;
-            if (int.TryParse(material.FactorPuntos, out int factor))
-            {
-                puntos = (int)(dto.Cantidad * factor);
-            }
             var entrega = new Entrega
             {
                 IdUsuario = dto.IdUsuario,
                 IdMaterial = dto.IdMaterial,
                 IdCentroAcopio = dto.IdCentroAcopio,
                 Cantidad = dto.Cantidad,
-                FechaEntrega = dto.FechaEntrega,
-                PuntosGenerados = puntos
+                FechaEntrega = DateTime.Now,
+                PuntosGenerados = (int)(dto.Cantidad * .10) // ejemplo
             };
 
             _context.Entregas.Add(entrega);
             await _context.SaveChangesAsync();
 
-            return Ok(new { mensaje = "Entrega registrada correctamente", entrega });
+            var response = new EntregaResponseDTO
+            {
+                IdEntrega = entrega.IdEntrega,
+                IdUsuario = entrega.IdUsuario,
+                IdMaterial = entrega.IdMaterial,
+                IdCentroAcopio = entrega.IdCentroAcopio,
+                Cantidad = entrega.Cantidad,
+                FechaEntrega = entrega.FechaEntrega,
+                PuntosGenerados = entrega.PuntosGenerados
+            };
+
+            return Ok(response);
         }
 
-
+        // ================================
+        // PUT: api/entrega/5
+        // ================================
         [HttpPut("{id}")]
-        public async Task<ActionResult> UpdateEntrega(int id, EntregaCreateDto dto)
+        public async Task<ActionResult> UpdateEntrega(int id, EntregaCreateDTO dto)
         {
             var entrega = await _context.Entregas.FindAsync(id);
 
@@ -124,13 +151,15 @@ namespace EcoPulse.Api.Controllers
             entrega.IdMaterial = dto.IdMaterial;
             entrega.IdCentroAcopio = dto.IdCentroAcopio;
             entrega.Cantidad = dto.Cantidad;
-            entrega.FechaEntrega = dto.FechaEntrega;
 
             await _context.SaveChangesAsync();
 
             return Ok(new { mensaje = "Entrega actualizada correctamente" });
         }
 
+        // ================================
+        // DELETE: api/entrega/5
+        // ================================
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteEntrega(int id)
         {
