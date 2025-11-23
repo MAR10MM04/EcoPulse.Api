@@ -18,6 +18,16 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader()
               .AllowAnyMethod());
 });
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
 
 // 2. CONFIGURACIÓN JWT (sigue igual)-
 
@@ -70,8 +80,6 @@ builder.Services.AddDbContext<MyDbContext>(options =>
         options.LogTo(Console.WriteLine, LogLevel.Information);
 });
 
-
-// 4. BUILD + MIDDLEWARE
 var app = builder.Build();
 // Endpoint health check
 app.MapGet("/health", async (context) =>
@@ -90,14 +98,15 @@ app.MapGet("/health", async (context) =>
 });
 
 if (app.Environment.IsDevelopment())
-{
+{ 
+
     app.UseSwagger();
     app.UseSwaggerUI(); 
 }
 
 app.UseHttpsRedirection();
 
-// CORS
+app.UseRouting();
 app.UseCors("AllowAll");
 
 // Mantener autenticación y autorización para API real

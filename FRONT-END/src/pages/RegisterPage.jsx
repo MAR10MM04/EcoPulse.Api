@@ -5,59 +5,65 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/use-toast';
-import { Leaf, ArrowLeft, User, Building, Store } from 'lucide-react';
+import { Leaf, ArrowLeft, User } from 'lucide-react';
+import { createUsuario } from '@/Service/UsuarioService';
+
 
 const RegisterPage = () => {
   const navigate = useNavigate();
-  const { register } = useAuth();
   const { toast } = useToast();
-  const [accountType, setAccountType] = useState('user');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    address: '',
-    materials: '',
-    category: ''
+    address: ''
   });
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
+    setIsLoading(true);
+
     if (!formData.name || !formData.email || !formData.password) {
       toast({
         title: "Error",
         description: "Por favor completa los campos obligatorios",
         variant: "destructive"
       });
+      setIsLoading(false);
       return;
     }
 
-    const userData = {
-      id: Date.now().toString(),
-      role: accountType,
-      name: formData.name,
-      email: formData.email,
-      password: formData.password,
-      address: formData.address,
-      materials: formData.materials,
-      category: formData.category,
-      points: 0,
-      rank: 'Bronce',
-      createdAt: new Date().toISOString()
-    };
+    try {
+      // Preparar datos para la API (solo los campos requeridos)
+      const usuarioData = {
+        Nombre: formData.name,
+        Email: formData.email,
+        Password: formData.password
+      };
 
-    register(userData);
-    
-    toast({
-      title: "¡Cuenta creada!",
-      description: "Tu cuenta ha sido creada exitosamente. Ahora puedes iniciar sesión."
-    });
-    
-    setTimeout(() => navigate('/login'), 1500);
+      // Llamar al servicio para crear el usuario en la base de datos
+      await createUsuario(usuarioData);
+
+      toast({
+        title: "¡Cuenta creada!",
+        description: "Tu cuenta ha sido creada exitosamente en nuestra base de datos. Ahora puedes iniciar sesión."
+      });
+
+      // Redirigir al login después del registro exitoso
+      setTimeout(() => navigate('/login'), 1500);
+
+    } catch (error) {
+      console.error('Error al crear usuario:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Hubo un problema al crear la cuenta. Inténtalo de nuevo.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -66,12 +72,12 @@ const RegisterPage = () => {
         <title>Registro - Eco-Pulse</title>
         <meta name="description" content="Crea tu cuenta en Eco-Pulse y comienza a reciclar para ganar puntos." />
       </Helmet>
-      
+
       <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-green-50 via-emerald-50 to-white py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-2xl"
+          className="w-full max-w-md"
         >
           <Button
             variant="ghost"
@@ -92,61 +98,24 @@ const RegisterPage = () => {
             <h2 className="text-3xl font-bold text-center mb-2 text-gray-800">Crear Cuenta</h2>
             <p className="text-center text-gray-600 mb-8">Únete a la comunidad Eco-Pulse</p>
 
-            <div className="mb-8">
-              <Label className="mb-4 block text-center font-semibold">Selecciona el tipo de cuenta</Label>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <button
-                  type="button"
-                  onClick={() => setAccountType('user')}
-                  className={`p-4 rounded-xl border-2 transition-all ${
-                    accountType === 'user' 
-                      ? 'border-green-600 bg-green-50' 
-                      : 'border-gray-200 hover:border-green-300'
-                  }`}
-                >
-                  <User className={`w-8 h-8 mx-auto mb-2 ${accountType === 'user' ? 'text-green-600' : 'text-gray-400'}`} />
-                  <p className="font-semibold text-sm">Usuario</p>
-                </button>
-                
-                <button
-                  type="button"
-                  onClick={() => setAccountType('center')}
-                  className={`p-4 rounded-xl border-2 transition-all ${
-                    accountType === 'center' 
-                      ? 'border-green-600 bg-green-50' 
-                      : 'border-gray-200 hover:border-green-300'
-                  }`}
-                >
-                  <Building className={`w-8 h-8 mx-auto mb-2 ${accountType === 'center' ? 'text-green-600' : 'text-gray-400'}`} />
-                  <p className="font-semibold text-sm">Centro de Acopio</p>
-                </button>
-                
-                <button
-                  type="button"
-                  onClick={() => setAccountType('commerce')}
-                  className={`p-4 rounded-xl border-2 transition-all ${
-                    accountType === 'commerce' 
-                      ? 'border-green-600 bg-green-50' 
-                      : 'border-gray-200 hover:border-green-300'
-                  }`}
-                >
-                  <Store className={`w-8 h-8 mx-auto mb-2 ${accountType === 'commerce' ? 'text-green-600' : 'text-gray-400'}`} />
-                  <p className="font-semibold text-sm">Comercio Local</p>
-                </button>
+            <div className="mb-8 flex justify-center">
+              <div className="bg-green-50 border-2 border-green-600 rounded-xl p-4 inline-flex items-center">
+                <User className="w-8 h-8 text-green-600 mr-3" />
+                <p className="font-semibold text-sm">Cuenta de Usuario</p>
               </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="name">
-                  {accountType === 'user' ? 'Nombre completo' : 'Nombre del establecimiento'} *
-                </Label>
+                <Label htmlFor="name">Nombre completo *</Label>
                 <Input
                   id="name"
-                  placeholder={accountType === 'user' ? 'Juan Pérez' : 'Nombre del negocio'}
+                  placeholder="Juan Pérez"
                   value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="border-gray-300 focus:border-green-500"
+                  disabled={isLoading}
+                  required
                 />
               </div>
 
@@ -157,8 +126,10 @@ const RegisterPage = () => {
                   type="email"
                   placeholder="tu@email.com"
                   value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="border-gray-300 focus:border-green-500"
+                  disabled={isLoading}
+                  required
                 />
               </div>
 
@@ -169,83 +140,29 @@ const RegisterPage = () => {
                   type="password"
                   placeholder="••••••••"
                   value={formData.password}
-                  onChange={(e) => setFormData({...formData, password: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className="border-gray-300 focus:border-green-500"
+                  disabled={isLoading}
+                  required
+                  minLength={6}
                 />
               </div>
 
-              {accountType === 'user' && (
-                <div className="space-y-2">
-                  <Label htmlFor="address">Dirección (opcional)</Label>
-                  <Input
-                    id="address"
-                    placeholder="Calle, número, ciudad"
-                    value={formData.address}
-                    onChange={(e) => setFormData({...formData, address: e.target.value})}
-                    className="border-gray-300 focus:border-green-500"
-                  />
-                </div>
-              )}
 
-              {accountType === 'center' && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="address">Dirección del centro *</Label>
-                    <Input
-                      id="address"
-                      placeholder="Calle, número, ciudad"
-                      value={formData.address}
-                      onChange={(e) => setFormData({...formData, address: e.target.value})}
-                      className="border-gray-300 focus:border-green-500"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="materials">Materiales aceptados</Label>
-                    <Input
-                      id="materials"
-                      placeholder="Plástico, Papel, Vidrio, Metal"
-                      value={formData.materials}
-                      onChange={(e) => setFormData({...formData, materials: e.target.value})}
-                      className="border-gray-300 focus:border-green-500"
-                    />
-                  </div>
-                </>
-              )}
-
-              {accountType === 'commerce' && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Categoría del comercio</Label>
-                    <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecciona una categoría" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="restaurant">Restaurante</SelectItem>
-                        <SelectItem value="store">Tienda</SelectItem>
-                        <SelectItem value="service">Servicio</SelectItem>
-                        <SelectItem value="entertainment">Entretenimiento</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="address">Ubicación</Label>
-                    <Input
-                      id="address"
-                      placeholder="Dirección del comercio"
-                      value={formData.address}
-                      onChange={(e) => setFormData({...formData, address: e.target.value})}
-                      className="border-gray-300 focus:border-green-500"
-                    />
-                  </div>
-                </>
-              )}
 
               <Button
                 type="submit"
                 className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-6 text-lg shadow-lg"
+                disabled={isLoading}
               >
-                Crear Cuenta
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Creando cuenta...
+                  </>
+                ) : (
+                  'Crear Cuenta'
+                )}
               </Button>
 
               <p className="text-center text-sm text-gray-600">
@@ -254,6 +171,7 @@ const RegisterPage = () => {
                   type="button"
                   onClick={() => navigate('/login')}
                   className="text-green-600 hover:text-green-700 font-semibold hover:underline"
+                  disabled={isLoading}
                 >
                   Inicia sesión aquí
                 </button>

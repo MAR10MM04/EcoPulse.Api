@@ -14,7 +14,7 @@ const WelcomePage = () => {
         <title>Bienvenido a Eco-Pulse</title>
         <meta name="description" content="Únete a Eco-Pulse y comienza a ganar puntos por reciclar. Cuida el planeta mientras obtienes recompensas." />
       </Helmet>
-      
+
       <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-green-50 via-emerald-50 to-white">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -62,13 +62,13 @@ const WelcomePage = () => {
               <h3 className="font-semibold text-lg mb-2">Recicla Fácil</h3>
               <p className="text-gray-600 text-sm">Encuentra centros de acopio cerca de ti</p>
             </div>
-            
+
             <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
               <Award className="w-12 h-12 text-green-600 mb-4 mx-auto" />
               <h3 className="font-semibold text-lg mb-2">Gana Puntos</h3>
               <p className="text-gray-600 text-sm">Cada kg reciclado suma puntos</p>
             </div>
-            
+
             <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
               <TrendingUp className="w-12 h-12 text-green-600 mb-4 mx-auto" />
               <h3 className="font-semibold text-lg mb-2">Canjea Premios</h3>

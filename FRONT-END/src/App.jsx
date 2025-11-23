@@ -25,10 +25,8 @@ import AddReward from '@/pages/commerce/AddReward';
 import ValidateRedemption from '@/pages/commerce/ValidateRedemption';
 import RedemptionHistory from '@/pages/commerce/RedemptionHistory';
 
-import AdminDashboard from '@/pages/admin/AdminDashboard';
-import UserManagement from '@/pages/admin/UserManagement';
-import Reports from '@/pages/admin/Reports';
-import Settings from '@/pages/admin/Settings';
+
+
 import { Loader2 } from 'lucide-react';
 
 function App() {
@@ -46,12 +44,12 @@ function App() {
     if (!isAuthenticated) {
       return <Navigate to="/login" replace />;
     }
-    
+
     if (allowedRoles && !allowedRoles.includes(user?.role)) {
       const userHome = `/${user?.role}/dashboard`;
       return <Navigate to={userHome} replace />;
     }
-    
+
     return children;
   };
 
@@ -76,12 +74,12 @@ function App() {
         <title>Eco-Pulse - Recicla y Gana Puntos</title>
         <meta name="description" content="Eco-Pulse es la aplicación que te recompensa por reciclar. Gana puntos por cada entrega y canjéalos por increíbles premios." />
       </Helmet>
-      
+
       <Routes>
         <Route path="/" element={<WelcomePage />} />
         <Route path="/login" element={<AuthRoute><LoginPage /></AuthRoute>} />
         <Route path="/register" element={<AuthRoute><RegisterPage /></AuthRoute>} />
-        
+
         {/* User Routes */}
         <Route path="/user/dashboard" element={<ProtectedRoute allowedRoles={['user']}><UserDashboard /></ProtectedRoute>} />
         <Route path="/user/map" element={<ProtectedRoute allowedRoles={['user']}><RecyclingMap /></ProtectedRoute>} />
@@ -89,13 +87,13 @@ function App() {
         <Route path="/user/history" element={<ProtectedRoute allowedRoles={['user']}><DeliveryHistory /></ProtectedRoute>} />
         <Route path="/user/market" element={<ProtectedRoute allowedRoles={['user']}><EcoMarket /></ProtectedRoute>} />
         <Route path="/user/profile" element={<ProtectedRoute allowedRoles={['user']}><UserProfile /></ProtectedRoute>} />
-        
+
         {/* Center Routes */}
         <Route path="/center/dashboard" element={<ProtectedRoute allowedRoles={['center']}><CenterDashboard /></ProtectedRoute>} />
         <Route path="/center/register" element={<ProtectedRoute allowedRoles={['center']}><CenterRegisterDelivery /></ProtectedRoute>} />
         <Route path="/center/history" element={<ProtectedRoute allowedRoles={['center']}><CenterHistory /></ProtectedRoute>} />
         <Route path="/center/materials" element={<ProtectedRoute allowedRoles={['center']}><MaterialsManagement /></ProtectedRoute>} />
-        
+
         {/* Commerce Routes */}
         <Route path="/commerce/dashboard" element={<ProtectedRoute allowedRoles={['commerce']}><CommerceDashboard /></ProtectedRoute>} />
         <Route path="/commerce/add-reward" element={<ProtectedRoute allowedRoles={['commerce']}><AddReward /></ProtectedRoute>} />
@@ -103,11 +101,6 @@ function App() {
         <Route path="/commerce/validate" element={<ProtectedRoute allowedRoles={['commerce']}><ValidateRedemption /></ProtectedRoute>} />
         <Route path="/commerce/history" element={<ProtectedRoute allowedRoles={['commerce']}><RedemptionHistory /></ProtectedRoute>} />
 
-        {/* Admin Routes */}
-        <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
-        <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><UserManagement /></ProtectedRoute>} />
-        <Route path="/admin/reports" element={<ProtectedRoute allowedRoles={['admin']}><Reports /></ProtectedRoute>} />
-        <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={['admin']}><Settings /></ProtectedRoute>} />
 
         {/* Fallback Redirect */}
         <Route path="*" element={<Navigate to="/" />} />

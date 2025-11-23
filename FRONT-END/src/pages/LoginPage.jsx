@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate, Link } from 'react-router-dom';
@@ -10,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { Leaf, Mail, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { loginUsuario } from '@/Service/UsuarioService';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -19,39 +19,70 @@ const LoginPage = () => {
     email: '',
     password: ''
   });
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    const users = JSON.parse(localStorage.getItem('eco-pulse-users') || '[]');
-    const user = users.find(u => u.email === formData.email && u.password === formData.password);
-    
-    if (user) {
-      login(user);
-      toast({
-        title: "¡Bienvenido!",
-        description: `Has iniciado sesión correctamente, ${user.name}.`
-      });
-      
-      // Redirect based on user role
-      if (user.role === 'user') {
-        navigate('/user/dashboard');
-      } else if (user.role === 'center') {
-        navigate('/center/dashboard');
-      } else if (user.role === 'commerce') {
-        navigate('/commerce/dashboard');
-      } else if (user.role === 'admin') {
-        navigate('/admin/dashboard');
-      } else {
-        navigate('/user/dashboard'); // Default fallback
-      }
-    } else {
+    setIsLoading(true);
+
+    if (!formData.email || !formData.password) {
       toast({
         title: "Error",
-        description: "Credenciales incorrectas. Por favor, verifica tu email y contraseña.",
+        description: "Por favor ingresa tu email y contraseña",
         variant: "destructive"
       });
+      setIsLoading(false);
+      return;
     }
+
+    try {
+      // Llamar al servicio de login
+      const loginResponse = await loginUsuario(formData.email, formData.password);
+
+      // Transformar los datos del usuario para el contexto de autenticación
+      const userData = {
+        id: loginResponse.IdUsuario?.toString() || loginResponse.idUsuario?.toString(),
+        role: loginResponse.Rol || 'user',
+        name: loginResponse.Nombre,
+        email: loginResponse.Email,
+        points: loginResponse.PuntosTotales || 0,
+        rank: getRankFromPoints(loginResponse.PuntosTotales || 0),
+        token: loginResponse.token
+      };
+
+      // Guardar en el contexto de autenticación
+      login(userData);
+
+      toast({
+        title: "¡Bienvenido!",
+        description: `Has iniciado sesión correctamente, ${userData.name}.`
+      });
+
+      // Redirigir según el rol
+      if (userData.role === 'admin' || userData.role === 'centro') {
+        navigate('/center/dashboard');
+      } else {
+        navigate('/user/dashboard');
+      }
+
+    } catch (error) {
+      console.error('Error en login:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Credenciales incorrectas. Por favor, verifica tu email y contraseña.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Función auxiliar para determinar el rango basado en puntos
+  const getRankFromPoints = (points) => {
+    if (points >= 1000) return 'Oro';
+    if (points >= 500) return 'Plata';
+    if (points >= 100) return 'Bronce';
+    return 'Novato';
   };
 
   return (
@@ -60,7 +91,7 @@ const LoginPage = () => {
         <title>Iniciar Sesión - Eco-Pulse</title>
         <meta name="description" content="Inicia sesión en Eco-Pulse para comenzar a reciclar y ganar puntos." />
       </Helmet>
-      
+
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-white flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -93,6 +124,7 @@ const LoginPage = () => {
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       className="pl-10"
                       required
+                      disabled={isLoading}
                     />
                   </div>
                 </div>
@@ -109,19 +141,35 @@ const LoginPage = () => {
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       className="pl-10"
                       required
+                      disabled={isLoading}
                     />
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white">
-                  Iniciar Sesión
+                <Button
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Iniciando sesión...
+                    </>
+                  ) : (
+                    'Iniciar Sesión'
+                  )}
                 </Button>
               </form>
 
               <div className="mt-6 text-center">
                 <p className="text-sm text-gray-600">
                   ¿No tienes cuenta?{' '}
-                  <Link to="/register" className="text-green-600 hover:text-green-700 font-semibold">
+                  <Link
+                    to="/register"
+                    className="text-green-600 hover:text-green-700 font-semibold"
+                    onClick={(e) => isLoading && e.preventDefault()}
+                  >
                     Regístrate aquí
                   </Link>
                 </p>
@@ -130,7 +178,11 @@ const LoginPage = () => {
           </Card>
 
           <div className="mt-6 text-center">
-            <Link to="/" className="text-sm text-gray-600 hover:text-gray-800">
+            <Link
+              to="/"
+              className="text-sm text-gray-600 hover:text-gray-800"
+              onClick={(e) => isLoading && e.preventDefault()}
+            >
               ← Volver al inicio
             </Link>
           </div>
