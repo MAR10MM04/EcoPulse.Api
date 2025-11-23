@@ -92,6 +92,7 @@ EcoPulse/
 └── 📁 Mobile/                   # App React Native
 
 👥 Equipo de Desarrollo
+
 Universidad Tecnológica de Candelaria - Desarrollo e Implementación
 
 Ing. Angel Mar - Arquitectura Backend Y frontend
@@ -99,3 +100,56 @@ Ing. Angel Mar - Arquitectura Backend Y frontend
 Ing. Henry Alvaro - Diseño de Gamificación
 Ing. Giorgina    - Diseño de Gamificación
 Ing. Karla Vera - Experiencia de Usuario
+
+
+🚀 Actualización y Refactorización del Módulo de Autenticación y Administración
+Este conjunto de cambios se centra en optimizar la estructura de la aplicación, mejorar la seguridad en la autenticación y limpiar el código base al eliminar funcionalidades de administración obsoletas o no utilizadas.
+
+✨ Características Principales
+Esta versión incluye mejoras significativas en la arquitectura del proyecto, especialmente en cómo se maneja la información del usuario y la autenticación.
+
+Implementación de un Nuevo Servicio de Usuario:
+
+Se creó un nuevo servicio (UserService) para centralizar y encapsular toda la lógica y llamadas a la API relacionadas con la gestión de usuarios (como obtener datos, actualizar perfiles, etc.).
+
+Beneficio: Código más limpio, modular y fácil de mantener.
+
+Refactorización de Autenticación (Login y Registro):
+
+Las páginas de Inicio de Sesión y Registro se actualizaron para utilizar el nuevo UserService para gestionar las llamadas de autenticación.
+
+Mejora de la Experiencia de Usuario: Se mejoró el manejo de errores y la gestión de estados de carga (loading) durante los procesos de autenticación, proporcionando una mejor retroalimentación visual al usuario.
+
+🗑️ Limpieza y Optimización del Código
+Se llevó a cabo una limpieza exhaustiva para eliminar código muerto y componentes que ya no son funcionales o necesarios, lo cual contribuye a un proyecto más ligero y rápido.
+
+Eliminación de Componentes de Administración Obsoletos:
+
+Se eliminaron rutas, componentes y páginas de administrador no utilizados.
+
+Se eliminaron las páginas antiguas del panel de administración y de informes, simplificando la estructura de la aplicación.
+
+Limpieza General del Componente Principal (App):
+
+El componente App se limpió al eliminar importaciones y rutas innecesarias, reduciendo su complejidad.
+
+📣 Mejoras en la Interfaz de Usuario
+Ajuste de Notificaciones:
+
+Se ajustaron y mejoraron las notificaciones tipo toast para que brinden una retroalimentación más clara y concisa al usuario sobre el éxito o fracaso de las operaciones.
+
+
+Instalar dependencias:
+
+Bash
+
+npm install
+# o yarn install
+Iniciar la aplicación:
+cd Front-End
+npm install
+npm install tailwind
+npm audit
+
+npm run dev
+# o yarn start
