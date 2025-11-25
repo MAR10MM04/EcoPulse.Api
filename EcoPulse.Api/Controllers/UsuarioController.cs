@@ -43,8 +43,9 @@ namespace EcoPulse.Controllers
                     {
                         IdCentroAcopio = u.CentroAcopio.IdCentroAcopio,
                         Nombre = u.CentroAcopio.Nombre,
-                        Direccion = u.CentroAcopio.Direccion,
-                        Ciudad = u.CentroAcopio.Ciudad
+                        
+                      //  Direccion = u.CentroAcopio.Direccion,
+                        
                     } : null,
                     // ✅ EVITAR CICLOS: Solo contar entregas o datos simples
                     TotalEntregas = u.Entregas.Count,
@@ -75,11 +76,10 @@ namespace EcoPulse.Controllers
                     {
                         IdCentroAcopio = u.CentroAcopio.IdCentroAcopio,
                         Nombre = u.CentroAcopio.Nombre,
-                        Direccion = u.CentroAcopio.Direccion,
+                    //    Direccion = u.CentroAcopio.Direccion,
                         Telefono = u.CentroAcopio.Telefono,
                         HorarioAtencion = u.CentroAcopio.HorarioAtencion,
-                        Ciudad = u.CentroAcopio.Ciudad,
-                        Estado = u.CentroAcopio.Estado
+                        
                     } : null,
                     Entregas = u.Entregas.Select(e => new EntregaSimpleDto
                     {

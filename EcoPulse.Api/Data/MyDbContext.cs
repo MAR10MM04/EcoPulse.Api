@@ -49,7 +49,7 @@ namespace EcoPulse.Api.Data
             .HasMany(c => c.Entregas)
             .WithOne(e => e.CentroAcopio)
             .HasForeignKey(e => e.IdCentroAcopio)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.Cascade);
 
 
         // Configuraciones adicionales para CentroAcopio

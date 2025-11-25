@@ -16,10 +16,6 @@ namespace EcoPulse.Api.Controllers
             _context = context;
         }
 
-        // ================================
-        // DTOs DENTRO DEL CONTROLLER
-        // ================================
-
         public class EntregaCreateDTO
         {
             public int IdUsuario { get; set; }
@@ -96,35 +92,43 @@ namespace EcoPulse.Api.Controllers
         // ================================
         // POST: api/entrega
         // ================================
-        [HttpPost]
-        public async Task<ActionResult<EntregaResponseDTO>> CrearEntrega([FromBody] EntregaCreateDTO dto)
-        {
-            var entrega = new Entrega
-            {
-                IdUsuario = dto.IdUsuario,
-                IdMaterial = dto.IdMaterial,
-                IdCentroAcopio = dto.IdCentroAcopio,
-                Cantidad = dto.Cantidad,
-                FechaEntrega = DateTime.Now,
-                PuntosGenerados = (int)(dto.Cantidad * .10) // ejemplo
-            };
+       [HttpPost]
+public async Task<ActionResult<EntregaConPuntosDTO>> CrearEntrega([FromBody] EntregaCreateDTO dto)
+{
+    var usuario = await _context.Usuarios.FindAsync(dto.IdUsuario);
+    if (usuario == null)
+        return BadRequest(new { message = "Usuario no encontrado." });
 
-            _context.Entregas.Add(entrega);
-            await _context.SaveChangesAsync();
+    var entrega = new Entrega
+    {
+        IdUsuario = dto.IdUsuario,
+        IdMaterial = dto.IdMaterial,
+        IdCentroAcopio = dto.IdCentroAcopio,
+        Cantidad = dto.Cantidad,
+        FechaEntrega = DateTime.Now,
+        PuntosGenerados = (int)(dto.Cantidad * 1)
+    };
 
-            var response = new EntregaResponseDTO
-            {
-                IdEntrega = entrega.IdEntrega,
-                IdUsuario = entrega.IdUsuario,
-                IdMaterial = entrega.IdMaterial,
-                IdCentroAcopio = entrega.IdCentroAcopio,
-                Cantidad = entrega.Cantidad,
-                FechaEntrega = entrega.FechaEntrega,
-                PuntosGenerados = entrega.PuntosGenerados
-            };
+    _context.Entregas.Add(entrega);
 
-            return Ok(response);
-        }
+    // sumamos puntos
+    usuario.PuntosTotales += entrega.PuntosGenerados;
+
+    await _context.SaveChangesAsync();
+
+    var response = new EntregaConPuntosDTO
+    {
+        IdEntrega = entrega.IdEntrega,
+        IdUsuario = entrega.IdUsuario,
+        Cantidad = entrega.Cantidad,
+        FechaEntrega = entrega.FechaEntrega,
+        PuntosGenerados = entrega.PuntosGenerados,
+        PuntosTotalesUsuario = usuario.PuntosTotales
+    };
+
+    return Ok(response);
+}
+
 
         // ================================
         // PUT: api/entrega/5
@@ -160,18 +164,34 @@ namespace EcoPulse.Api.Controllers
         // ================================
         // DELETE: api/entrega/5
         // ================================
-        [HttpDelete("{id}")]
-        public async Task<ActionResult> DeleteEntrega(int id)
-        {
-            var entrega = await _context.Entregas.FindAsync(id);
+   [HttpDelete("{id}")]
+public async Task<ActionResult> DeleteEntrega(int id)
+{
+    var entrega = await _context.Entregas
+        .Include(e => e.Usuario)
+        .FirstOrDefaultAsync(e => e.IdEntrega == id);
 
-            if (entrega == null)
-                return NotFound();
+    if (entrega == null)
+        return NotFound(new { mensaje = "Entrega no encontrada" });
 
-            _context.Entregas.Remove(entrega);
-            await _context.SaveChangesAsync();
+    // 🔽 1. Restar puntos del usuario
+    if (entrega.Usuario != null)
+    {
+        entrega.Usuario.PuntosTotales -= entrega.PuntosGenerados;
 
-            return Ok(new { mensaje = "Entrega eliminada correctamente" });
-        }
+        // Evitar valores negativos por si acaso
+        if (entrega.Usuario.PuntosTotales < 0)
+            entrega.Usuario.PuntosTotales = 0;
+    }
+
+    // 🔽 2. Eliminar la entrega
+    _context.Entregas.Remove(entrega);
+
+    // 🔽 3. Guardar todos los cambios
+    await _context.SaveChangesAsync();
+
+    return Ok(new { mensaje = "Entrega eliminada correctamente y puntos actualizados" });
+}
+
     }
 }

@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using EcoPulse.Api.Data;
-using EcoPulse.Api.DTOs;
 using EcoPulse.Api.Models;
+using EcoPulse.Api.DTOs;
 
 namespace EcoPulse.Api.Controllers
 {
@@ -17,7 +17,7 @@ namespace EcoPulse.Api.Controllers
             _context = context;
         }
 
-
+        // ➤ GET: api/CentroAcopio
         [HttpGet]
         public async Task<IActionResult> GetCentros()
         {
@@ -28,26 +28,22 @@ namespace EcoPulse.Api.Controllers
                 {
                     IdCentroAcopio = c.IdCentroAcopio,
                     Nombre = c.Nombre,
-                    Direccion = c.Direccion,
+                    Latitud = c.Latitud,
+                    Longitud = c.Longitud,
                     Telefono = c.Telefono,
                     HorarioAtencion = c.HorarioAtencion,
-                    Ciudad = c.Ciudad,
-                    Estado = c.Estado,
                     IdUsuario = c.IdUsuario,
-                    IdMaterial = c.IdMaterial,
 
-                    NombreUsuario = c.Usuario.Nombre,
-                    NombreMaterial = _context.Materiales
-                        .Where(m => m.IdMaterial == c.IdMaterial)
-                        .Select(m => m.Nombre)
-                        .FirstOrDefault()
+
+
                 })
                 .ToListAsync();
 
             return Ok(centros);
         }
 
-  
+
+        // ➤ GET: api/CentroAcopio/5
         [HttpGet("{id}")]
         public async Task<IActionResult> GetCentro(int id)
         {
@@ -58,18 +54,13 @@ namespace EcoPulse.Api.Controllers
                 {
                     IdCentroAcopio = c.IdCentroAcopio,
                     Nombre = c.Nombre,
-                    Direccion = c.Direccion,
+                    Latitud = c.Latitud,
+                    Longitud = c.Longitud,
                     Telefono = c.Telefono,
                     HorarioAtencion = c.HorarioAtencion,
-                    Ciudad = c.Ciudad,
-                    Estado = c.Estado,
                     IdUsuario = c.IdUsuario,
-                    IdMaterial = c.IdMaterial,
-                    NombreUsuario = c.Usuario.Nombre,
-                    NombreMaterial = _context.Materiales
-                        .Where(m => m.IdMaterial == c.IdMaterial)
-                        .Select(m => m.Nombre)
-                        .FirstOrDefault()
+                   
+    
                 })
                 .FirstOrDefaultAsync();
 
@@ -78,57 +69,94 @@ namespace EcoPulse.Api.Controllers
 
             return Ok(centro);
         }
-
-
         [HttpPost]
-        public async Task<IActionResult> CreateCentro([FromBody] CentroAcopioCreateDTO dto)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+public async Task<ActionResult> CreateCentro(CentroAcopioDTO dto)
+{
+    // Validación de campos
+    if (string.IsNullOrWhiteSpace(dto.Nombre))
+        return BadRequest(new { message = "El nombre es obligatorio." });
 
-            // Validar que el usuario no tenga ya un centro (1:1)
-            if (await _context.CentrosAcopio.AnyAsync(c => c.IdUsuario == dto.IdUsuario))
-                return BadRequest(new { message = "Este usuario ya tiene un centro de acopio asignado." });
+    if (dto.Latitud == 0 || dto.Longitud == 0)
+        return BadRequest(new { message = "Las coordenadas son obligatorias." });
 
-            var centro = new CentroAcopio
-            {
-                Nombre = dto.Nombre,
-                Direccion = dto.Direccion,
-                Telefono = dto.Telefono,
-                HorarioAtencion = dto.HorarioAtencion,
-                Ciudad = dto.Ciudad,
-                Estado = dto.Estado,
-                IdUsuario = dto.IdUsuario,
-               
-            };
+    if (string.IsNullOrWhiteSpace(dto.Telefono) || dto.Telefono.Length < 10)
+        return BadRequest(new { message = "El teléfono es inválido. Debe tener al menos 10 dígitos." });
 
-            _context.CentrosAcopio.Add(centro);
-            await _context.SaveChangesAsync();
+    if (string.IsNullOrWhiteSpace(dto.HorarioAtencion))
+        return BadRequest(new { message = "El horario de atención es obligatorio." });
 
-            return Ok(new { message = "Centro de acopio creado correctamente." });
-        }
+    // Validar si el usuario ya tiene un centro (relación 1:1)
+    var usuarioTieneCentro = await _context.CentrosAcopio
+        .AnyAsync(c => c.IdUsuario == dto.IdUsuario);
+
+    if (usuarioTieneCentro)
+        return BadRequest(new { message = "Este usuario ya tiene un centro de acopio registrado." });
+
+    
+    // Guardar registro
+    var centro = new CentroAcopio
+    {
+        Nombre = dto.Nombre,
+        Latitud = dto.Latitud,
+        Longitud = dto.Longitud,
+        Telefono = dto.Telefono,
+        HorarioAtencion = dto.HorarioAtencion,
+        IdUsuario = dto.IdUsuario,
+        
+    };
+
+    _context.CentrosAcopio.Add(centro);
+    await _context.SaveChangesAsync();
+
+    return CreatedAtAction(nameof(GetCentro), new { id = centro.IdCentroAcopio }, dto);
+}
 
 
+        // ➤ PUT: api/CentroAcopio/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateCentro(int id, [FromBody] CentroAcopioCreateDTO dto)
-        {
-            var centro = await _context.CentrosAcopio.FindAsync(id);
+public async Task<IActionResult> UpdateCentro(int id, [FromBody] CentroAcopioUpdateDTO dto)
 
-            if (centro == null)
-                return NotFound(new { message = "Centro de acopio no encontrado." });
+{
+    var centro = await _context.CentrosAcopio.FindAsync(id);
 
-            centro.Nombre = dto.Nombre;
-            centro.Direccion = dto.Direccion;
-            centro.Telefono = dto.Telefono;
-            centro.HorarioAtencion = dto.HorarioAtencion;
-            centro.Ciudad = dto.Ciudad;
-            centro.Estado = dto.Estado;
-            
+    if (centro == null)
+        return NotFound(new { message = "Centro de acopio no encontrado." });
 
-            await _context.SaveChangesAsync();
+    centro.Nombre = dto.Nombre;
+    centro.Latitud = dto.Latitud;
+    centro.Longitud = dto.Longitud;
+    centro.Telefono = dto.Telefono;
+    centro.HorarioAtencion = dto.HorarioAtencion;
 
-            return Ok(new { message = "Centro de acopio actualizado correctamente." });
-        }
+    await _context.SaveChangesAsync();
+
+    return Ok(new { message = "Centro de acopio actualizado correctamente." });
+}
+
+
+[HttpGet("usuario/{idUsuario}")]
+public async Task<ActionResult<CentroAcopioDTO>> GetCentroPorUsuario(int idUsuario)
+{
+    var centro = await _context.CentrosAcopio
+        .FirstOrDefaultAsync(c => c.IdUsuario == idUsuario);
+
+    if (centro == null)
+        return NotFound(new { message = "El usuario no tiene un centro de acopio registrado." });
+
+    var dto = new CentroAcopioDTO
+    {
+       
+        Nombre = centro.Nombre,
+        Latitud = centro.Latitud,
+        Longitud = centro.Longitud,
+        Telefono = centro.Telefono,
+        HorarioAtencion = centro.HorarioAtencion,
+        IdUsuario = centro.IdUsuario,
+        
+    };
+
+    return Ok(dto);
+}
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCentro(int id)
@@ -149,6 +177,5 @@ namespace EcoPulse.Api.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Centro de acopio eliminado correctamente." });
-        }
-    }
+        }}
 }

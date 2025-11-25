@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("EcoPulse.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+64f68f0de9f3f2805b27afb2eef2007fc57ff3a1")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c706e1f4389238c3fec3becdeef7beb51317ed86")]
 [assembly: System.Reflection.AssemblyProductAttribute("EcoPulse.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("EcoPulse.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

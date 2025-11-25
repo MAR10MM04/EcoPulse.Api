@@ -10,12 +10,16 @@ namespace EcoPulse.Api.Models
     {
         [Key]
         public int IdCentroAcopio { get; set; }
-        public string Nombre { get; set; }
-        public string Direccion { get; set; }
+        [Required]
+        public  string Nombre { get; set; }
+        [Required]
+        public double Latitud { get; set; }
+         [Required]
+        public double Longitud { get; set; }
+        [Required]
         public string Telefono { get; set; }
-        public string HorarioAtencion { get; set; }
-        public string Ciudad { get; set; }
-        public string Estado { get; set; }
+        [Required]
+        public  string HorarioAtencion { get; set; }
         public int IdUsuario { get; set; }
         public int IdMaterial { get; set; }
 

@@ -190,3 +190,37 @@ Se refactorizaron los componentes ProtectedRoute y AuthRoute para ofrecer un flu
 Refactorización del Sistema de Notificaciones:
 
 Se mejoró el manejo de toasts en use-toast.js para asegurar que las notificaciones se muestren correctamente y evitar posibles colisiones de propiedades (props).
+
+
+♻️ Refactorización Mayor: Gestión de Entregas y Puntos de Usuario
+Este conjunto de cambios se centra en la lógica de negocio dentro de EntregasController para vincular las acciones de entrega directamente con la acumulación y deducción de puntos del usuario, asegurando la integridad de los datos a nivel de base de datos.
+
+🛠️ Cambios en el EntregasController (Lógica de Puntos)
+Se refactorizaron los métodos del controlador para garantizar que la puntuación del usuario se actualice de forma atómica con la creación o eliminación de una entrega.
+
+1. Creación de Entregas (CrearEntrega)
+Validación de Usuario: Se añadió una validación estricta para asegurar la existencia del usuario antes de procesar la entrega.
+
+Cálculo Dinámico de Puntos: La lógica de puntos fue implementada para calcular los puntos que se otorgan al usuario basándose en la cantidad de entregas (o peso/valor) que realiza.
+
+Respuesta Mejorada: El DTO de respuesta para la creación de entregas fue actualizado para incluir el campo PuntosTotalesUsuario, proporcionando retroalimentación inmediata sobre el nuevo saldo de puntos.
+
+2. Eliminación de Entregas (DeleteEntrega)
+Deducción Automática: Se modificó el método para restar los puntos correspondientes al usuario cuando una entrega asociada es eliminada, manteniendo la coherencia en el perfil del usuario.
+
+💾 Cambios en la Base de Datos y Modelos
+1. Integridad de Datos y Relaciones
+Eliminación en Cascada (Cascading Delete): Se modificó la relación de clave foránea en la base de datos para habilitar la eliminación en cascada entre las tablas Entregas y CentrosAcopio.
+
+Esto asegura que si un Centro de Acopio es eliminado, las entregas relacionadas también se manejen adecuadamente, aunque es vital revisar la política de eliminación.
+
+Actualización de Migraciones: Se actualizaron las migraciones de la base de datos para implementar los nuevos cambios en las relaciones y la estructura del modelo CentroAcopio.
+
+2. Limpieza y Nuevos DTOs
+Eliminación de Código Muerto: Se eliminó el DTO CentroAcopioCreateDTO no utilizado y propiedades relacionadas del modelo CentroAcopio.
+
+Nuevos DTOs Introducidos:
+
+Se agregaron nuevos DTOs para el manejo limpio y estructurado de los datos de CentroAcopio.
+
+Se creó el DTO EntregaConPuntos para manejar la respuesta ampliada del método CrearEntrega.
