@@ -12,7 +12,7 @@ const UserDashboard = () => {
   const { user } = useAuth();
 
   const getRankColor = (rank) => {
-    switch(rank) {
+    switch (rank) {
       case 'Oro': return 'from-yellow-400 to-yellow-600';
       case 'Plata': return 'from-gray-300 to-gray-500';
       default: return 'from-orange-400 to-orange-600';
@@ -30,7 +30,7 @@ const UserDashboard = () => {
         <title>Mi Dashboard - Eco-Pulse</title>
         <meta name="description" content="Gestiona tus puntos, entregas y recompensas en Eco-Pulse." />
       </Helmet>
-      
+
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-white p-4 md:p-8">
         <div className="max-w-6xl mx-auto">
           <div className="flex justify-between items-center mb-8">
@@ -83,7 +83,7 @@ const UserDashboard = () => {
               </div>
               <p className="text-4xl font-bold mb-2">{user?.rank || 'Bronce'}</p>
               <div className="bg-white/20 rounded-full h-2 mb-2">
-                <div className="bg-white rounded-full h-2" style={{width: '45%'}}></div>
+                <div className="bg-white rounded-full h-2" style={{ width: '45%' }}></div>
               </div>
               <p className="text-sm">55% para alcanzar Plata</p>
             </motion.div>

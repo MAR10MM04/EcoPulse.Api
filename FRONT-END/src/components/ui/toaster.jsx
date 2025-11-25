@@ -14,7 +14,14 @@ export function Toaster() {
 
 	return (
 		<ToastProvider>
-			{toasts.map(({ id, title, description, action, ...props }) => {
+			{toasts.map(({
+				id,
+				title,
+				description,
+				action,
+				_dismiss, // 👈 Se extrae la propiedad interna
+				...props // 👈 El resto de propiedades (variant, duration, etc.)
+			}) => {
 				return (
 					<Toast key={id} {...props}>
 						<div className="grid gap-1">

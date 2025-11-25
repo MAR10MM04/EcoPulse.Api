@@ -18,6 +18,7 @@ import CenterDashboard from '@/pages/center/CenterDashboard';
 import CenterRegisterDelivery from '@/pages/center/CenterRegisterDelivery';
 import CenterHistory from '@/pages/center/CenterHistory';
 import MaterialsManagement from '@/pages/center/MaterialsManagement';
+import LoginCentro from '@/pages/center/LoginCentro';
 
 import CommerceDashboard from '@/pages/commerce/CommerceDashboard';
 import AddReward from '@/pages/commerce/AddReward';
@@ -29,19 +30,10 @@ import { Loader2 } from 'lucide-react';
 function App() {
   const { user, isAuthenticated, loading } = useAuth();
 
-  console.log('🔄 Estado de autenticación en App:', { 
-    isAuthenticated, 
-    loading, 
-    user,
-    hasLocalStorageUser: !!localStorage.getItem('eco-pulse-user'),
-    hasLocalStorageToken: !!localStorage.getItem('eco-pulse-token')
-  });
-
   const ProtectedRoute = ({ children }) => {
-    console.log('🔒 ProtectedRoute - Estado:', { isAuthenticated, loading });
-    
+
     if (loading) {
-      console.log('⏳ ProtectedRoute: Cargando...');
+
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
           <Loader2 className="w-10 h-10 text-green-600 animate-spin" />
@@ -50,32 +42,31 @@ function App() {
     }
 
     if (!isAuthenticated) {
-      console.log('❌ ProtectedRoute: No autenticado, redirigiendo a login');
+
       return <Navigate to="/login" replace />;
     }
 
-    console.log('✅ ProtectedRoute: Usuario autenticado, permitiendo acceso');
+
     return children;
   };
 
   const AuthRoute = ({ children }) => {
-    console.log('🔐 AuthRoute - Estado:', { isAuthenticated, loading });
-    
+
+
     if (loading) {
-      console.log('⏳ AuthRoute: Cargando...');
+
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
           <Loader2 className="w-10 h-10 text-green-600 animate-spin" />
         </div>
       );
     }
-    
+
     if (isAuthenticated) {
-      console.log('✅ AuthRoute: Usuario autenticado, redirigiendo a dashboard');
+
       return <Navigate to="/user/dashboard" replace />;
     }
-    
-    console.log('🔓 AuthRoute: Usuario no autenticado, mostrando formulario');
+
     return children;
   };
 
@@ -91,6 +82,9 @@ function App() {
         <Route path="/login" element={<AuthRoute><LoginPage /></AuthRoute>} />
         <Route path="/register" element={<AuthRoute><RegisterPage /></AuthRoute>} />
 
+        {/* Nueva ruta para registrar centro */}
+
+
         {/* Todas las rutas protegidas - accesibles para cualquier usuario autenticado */}
         <Route path="/user/dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
         <Route path="/user/map" element={<ProtectedRoute><RecyclingMap /></ProtectedRoute>} />
@@ -103,6 +97,7 @@ function App() {
         <Route path="/center/register" element={<ProtectedRoute><CenterRegisterDelivery /></ProtectedRoute>} />
         <Route path="/center/history" element={<ProtectedRoute><CenterHistory /></ProtectedRoute>} />
         <Route path="/center/materials" element={<ProtectedRoute><MaterialsManagement /></ProtectedRoute>} />
+        <Route path="/center/create" element={<ProtectedRoute><LoginCentro /></ProtectedRoute>} />
 
         <Route path="/commerce/dashboard" element={<ProtectedRoute><CommerceDashboard /></ProtectedRoute>} />
         <Route path="/commerce/add-reward" element={<ProtectedRoute><AddReward /></ProtectedRoute>} />

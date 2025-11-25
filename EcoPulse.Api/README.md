@@ -153,3 +153,40 @@ npm audit
 
 npm run dev
 # o yarn start
+
+
+✨ feat: Integración del Servicio CentroAcopio y Nueva Página de Login Específica
+1. Servicio y Lógica de Negocio
+CentroServices.js Agregado:
+
+Se creó un servicio dedicado (CentroServices.js) para manejar todas las interacciones con la API relacionadas con la entidad CentroAcopio.
+
+Función createCentro Implementada: Se añadió una función para manejar el proceso de registro y envío de datos de un nuevo centro de acopio al backend.
+
+2. Interfaz de Usuario (UI) y Rutas
+Página LoginCentro.jsx Creada:
+
+Se diseñó y creó una nueva página exclusiva para el formulario de registro de Centros de Acopio.
+
+Incluye validación del formulario y utiliza notificaciones tipo toast para brindar retroalimentación al usuario.
+
+Actualización de Rutas (App.jsx):
+
+Se incluyó una nueva ruta en App.jsx para el acceso a la página LoginCentro.
+
+Mejora de Navegación en el Mapa (RecyclingMap.jsx):
+
+Se actualizó el componente RecyclingMap.jsx para incluir un botón que redirige a los usuarios a la nueva página de creación de centros (LoginCentro.jsx).
+
+
+
+🚀 Mejoras de Arquitectura y Limpieza
+Se llevaron a cabo varias mejoras a nivel de framework para garantizar un código más robusto y limpio.
+
+Manejo de Autenticación Mejorado:
+
+Se refactorizaron los componentes ProtectedRoute y AuthRoute para ofrecer un flujo de autenticación y redirección más seguro y eficiente a través de la aplicación.
+
+Refactorización del Sistema de Notificaciones:
+
+Se mejoró el manejo de toasts en use-toast.js para asegurar que las notificaciones se muestren correctamente y evitar posibles colisiones de propiedades (props).

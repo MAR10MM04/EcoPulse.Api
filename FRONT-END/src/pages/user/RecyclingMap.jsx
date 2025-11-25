@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, MapPin, Clock, Recycle } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, Recycle, Plus } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+
 import L from 'leaflet';
 
 delete L.Icon.Default.prototype._getIconUrl;
@@ -45,21 +46,32 @@ const RecyclingMap = () => {
         <title>Mapa de Centros - Eco-Pulse</title>
         <meta name="description" content="Encuentra centros de reciclaje cerca de ti." />
       </Helmet>
-      
+
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-white p-4 md:p-8">
         <div className="max-w-6xl mx-auto">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/user/dashboard')}
-            className="mb-4 text-green-700 hover:text-green-800"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Volver al Dashboard
-          </Button>
+          <div className="flex justify-between items-center mb-4">
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/user/dashboard')}
+              className="text-green-700 hover:text-green-800"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+
+              Volver al Dashboard
+            </Button>
+
+            <Button
+              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => navigate('/center/create')}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Crear Centro
+            </Button>
+          </div>
 
           <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
             <h1 className="text-3xl font-bold mb-4 text-gray-800">Mapa de Centros de Reciclaje</h1>
-            
+
             <div className="flex gap-2 mb-4 flex-wrap">
               <Button
                 variant={selectedMaterial === 'all' ? 'default' : 'outline'}
