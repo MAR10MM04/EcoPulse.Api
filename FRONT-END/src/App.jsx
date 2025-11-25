@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
@@ -25,15 +24,24 @@ import AddReward from '@/pages/commerce/AddReward';
 import ValidateRedemption from '@/pages/commerce/ValidateRedemption';
 import RedemptionHistory from '@/pages/commerce/RedemptionHistory';
 
-
-
 import { Loader2 } from 'lucide-react';
 
 function App() {
   const { user, isAuthenticated, loading } = useAuth();
 
-  const ProtectedRoute = ({ children, allowedRoles }) => {
+  console.log('🔄 Estado de autenticación en App:', { 
+    isAuthenticated, 
+    loading, 
+    user,
+    hasLocalStorageUser: !!localStorage.getItem('eco-pulse-user'),
+    hasLocalStorageToken: !!localStorage.getItem('eco-pulse-token')
+  });
+
+  const ProtectedRoute = ({ children }) => {
+    console.log('🔒 ProtectedRoute - Estado:', { isAuthenticated, loading });
+    
     if (loading) {
+      console.log('⏳ ProtectedRoute: Cargando...');
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
           <Loader2 className="w-10 h-10 text-green-600 animate-spin" />
@@ -42,29 +50,32 @@ function App() {
     }
 
     if (!isAuthenticated) {
+      console.log('❌ ProtectedRoute: No autenticado, redirigiendo a login');
       return <Navigate to="/login" replace />;
     }
 
-    if (allowedRoles && !allowedRoles.includes(user?.role)) {
-      const userHome = `/${user?.role}/dashboard`;
-      return <Navigate to={userHome} replace />;
-    }
-
+    console.log('✅ ProtectedRoute: Usuario autenticado, permitiendo acceso');
     return children;
   };
 
   const AuthRoute = ({ children }) => {
+    console.log('🔐 AuthRoute - Estado:', { isAuthenticated, loading });
+    
     if (loading) {
+      console.log('⏳ AuthRoute: Cargando...');
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
           <Loader2 className="w-10 h-10 text-green-600 animate-spin" />
         </div>
       );
     }
+    
     if (isAuthenticated) {
-      const userHome = `/${user.role}/dashboard`;
-      return <Navigate to={userHome} replace />;
+      console.log('✅ AuthRoute: Usuario autenticado, redirigiendo a dashboard');
+      return <Navigate to="/user/dashboard" replace />;
     }
+    
+    console.log('🔓 AuthRoute: Usuario no autenticado, mostrando formulario');
     return children;
   };
 
@@ -80,27 +91,24 @@ function App() {
         <Route path="/login" element={<AuthRoute><LoginPage /></AuthRoute>} />
         <Route path="/register" element={<AuthRoute><RegisterPage /></AuthRoute>} />
 
-        {/* User Routes */}
-        <Route path="/user/dashboard" element={<ProtectedRoute allowedRoles={['user']}><UserDashboard /></ProtectedRoute>} />
-        <Route path="/user/map" element={<ProtectedRoute allowedRoles={['user']}><RecyclingMap /></ProtectedRoute>} />
-        <Route path="/user/register-delivery" element={<ProtectedRoute allowedRoles={['user']}><RegisterDelivery /></ProtectedRoute>} />
-        <Route path="/user/history" element={<ProtectedRoute allowedRoles={['user']}><DeliveryHistory /></ProtectedRoute>} />
-        <Route path="/user/market" element={<ProtectedRoute allowedRoles={['user']}><EcoMarket /></ProtectedRoute>} />
-        <Route path="/user/profile" element={<ProtectedRoute allowedRoles={['user']}><UserProfile /></ProtectedRoute>} />
+        {/* Todas las rutas protegidas - accesibles para cualquier usuario autenticado */}
+        <Route path="/user/dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
+        <Route path="/user/map" element={<ProtectedRoute><RecyclingMap /></ProtectedRoute>} />
+        <Route path="/user/register-delivery" element={<ProtectedRoute><RegisterDelivery /></ProtectedRoute>} />
+        <Route path="/user/history" element={<ProtectedRoute><DeliveryHistory /></ProtectedRoute>} />
+        <Route path="/user/market" element={<ProtectedRoute><EcoMarket /></ProtectedRoute>} />
+        <Route path="/user/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
 
-        {/* Center Routes */}
-        <Route path="/center/dashboard" element={<ProtectedRoute allowedRoles={['center']}><CenterDashboard /></ProtectedRoute>} />
-        <Route path="/center/register" element={<ProtectedRoute allowedRoles={['center']}><CenterRegisterDelivery /></ProtectedRoute>} />
-        <Route path="/center/history" element={<ProtectedRoute allowedRoles={['center']}><CenterHistory /></ProtectedRoute>} />
-        <Route path="/center/materials" element={<ProtectedRoute allowedRoles={['center']}><MaterialsManagement /></ProtectedRoute>} />
+        <Route path="/center/dashboard" element={<ProtectedRoute><CenterDashboard /></ProtectedRoute>} />
+        <Route path="/center/register" element={<ProtectedRoute><CenterRegisterDelivery /></ProtectedRoute>} />
+        <Route path="/center/history" element={<ProtectedRoute><CenterHistory /></ProtectedRoute>} />
+        <Route path="/center/materials" element={<ProtectedRoute><MaterialsManagement /></ProtectedRoute>} />
 
-        {/* Commerce Routes */}
-        <Route path="/commerce/dashboard" element={<ProtectedRoute allowedRoles={['commerce']}><CommerceDashboard /></ProtectedRoute>} />
-        <Route path="/commerce/add-reward" element={<ProtectedRoute allowedRoles={['commerce']}><AddReward /></ProtectedRoute>} />
-        <Route path="/commerce/edit-reward/:id" element={<ProtectedRoute allowedRoles={['commerce']}><AddReward /></ProtectedRoute>} />
-        <Route path="/commerce/validate" element={<ProtectedRoute allowedRoles={['commerce']}><ValidateRedemption /></ProtectedRoute>} />
-        <Route path="/commerce/history" element={<ProtectedRoute allowedRoles={['commerce']}><RedemptionHistory /></ProtectedRoute>} />
-
+        <Route path="/commerce/dashboard" element={<ProtectedRoute><CommerceDashboard /></ProtectedRoute>} />
+        <Route path="/commerce/add-reward" element={<ProtectedRoute><AddReward /></ProtectedRoute>} />
+        <Route path="/commerce/edit-reward/:id" element={<ProtectedRoute><AddReward /></ProtectedRoute>} />
+        <Route path="/commerce/validate" element={<ProtectedRoute><ValidateRedemption /></ProtectedRoute>} />
+        <Route path="/commerce/history" element={<ProtectedRoute><RedemptionHistory /></ProtectedRoute>} />
 
         {/* Fallback Redirect */}
         <Route path="*" element={<Navigate to="/" />} />

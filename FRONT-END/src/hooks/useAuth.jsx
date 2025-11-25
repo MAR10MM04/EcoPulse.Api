@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const AuthContext = createContext(null);
@@ -11,14 +10,26 @@ export const AuthProvider = ({ children }) => {
   const loadUserFromStorage = useCallback(() => {
     try {
       const storedUser = localStorage.getItem('eco-pulse-user');
-      if (storedUser) {
+      const storedToken = localStorage.getItem('eco-pulse-token');
+      
+      console.log('🔄 Cargando usuario desde localStorage:', { storedUser, storedToken });
+      
+      if (storedUser && storedToken) {
         const userData = JSON.parse(storedUser);
         setUser(userData);
         setIsAuthenticated(true);
+        console.log('✅ Usuario cargado desde localStorage:', userData);
+      } else {
+        console.log('❌ No hay usuario o token en localStorage');
+        setIsAuthenticated(false);
+        setUser(null);
       }
     } catch (error) {
-      console.error("Failed to parse user from localStorage", error);
+      console.error("❌ Error al cargar usuario desde localStorage:", error);
       localStorage.removeItem('eco-pulse-user');
+      localStorage.removeItem('eco-pulse-token');
+      setIsAuthenticated(false);
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -29,24 +40,51 @@ export const AuthProvider = ({ children }) => {
   }, [loadUserFromStorage]);
 
   const login = (userData) => {
-    localStorage.setItem('eco-pulse-user', JSON.stringify(userData));
-    setUser(userData);
-    setIsAuthenticated(true);
+    console.log('🔐 Iniciando sesión con datos:', userData);
+    
+    // Validar que tenemos los datos necesarios
+    if (!userData || !userData.token) {
+      console.error('❌ Datos de usuario incompletos para login');
+      return;
+    }
+    
+    try {
+      // Guardar en localStorage
+      localStorage.setItem('eco-pulse-user', JSON.stringify(userData));
+      localStorage.setItem('eco-pulse-token', userData.token);
+      
+      // Actualizar estado
+      setUser(userData);
+      setIsAuthenticated(true);
+      
+      console.log('✅ Login exitoso, usuario guardado:', userData);
+    } catch (error) {
+      console.error('❌ Error al guardar usuario en localStorage:', error);
+    }
   };
 
   const logout = () => {
+    console.log('🚪 Cerrando sesión');
     localStorage.removeItem('eco-pulse-user');
+    localStorage.removeItem('eco-pulse-token');
     setUser(null);
     setIsAuthenticated(false);
   };
 
-  const register = (userData) => {
-    const users = JSON.parse(localStorage.getItem('eco-pulse-users') || '[]');
-    users.push(userData);
-    localStorage.setItem('eco-pulse-users', JSON.stringify(users));
+  const updateUser = (updatedUserData) => {
+    const newUserData = { ...user, ...updatedUserData };
+    localStorage.setItem('eco-pulse-user', JSON.stringify(newUserData));
+    setUser(newUserData);
   };
 
-  const value = { user, isAuthenticated, loading, login, logout, register };
+  const value = { 
+    user, 
+    isAuthenticated, 
+    loading, 
+    login, 
+    logout, 
+    updateUser 
+  };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

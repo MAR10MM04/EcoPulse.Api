@@ -39,16 +39,33 @@ const LoginPage = () => {
       // Llamar al servicio de login
       const loginResponse = await loginUsuario(formData.email, formData.password);
 
+      console.log('🔐 Respuesta completa del login:', loginResponse);
+
+      // Verificar que la respuesta tenga la estructura esperada
+      if (!loginResponse || (!loginResponse.usuarioResponse && !loginResponse.token)) {
+        throw new Error('Respuesta del servidor inválida');
+      }
+
+      // Determinar de dónde vienen los datos del usuario
+      const userDataFromResponse = loginResponse.usuarioResponse || loginResponse;
+      
       // Transformar los datos del usuario para el contexto de autenticación
       const userData = {
-        id: loginResponse.IdUsuario?.toString() || loginResponse.idUsuario?.toString(),
-        role: loginResponse.Rol || 'user',
-        name: loginResponse.Nombre,
-        email: loginResponse.Email,
-        points: loginResponse.PuntosTotales || 0,
-        rank: getRankFromPoints(loginResponse.PuntosTotales || 0),
+        id: userDataFromResponse.idUsuario?.toString() || userDataFromResponse.IdUsuario?.toString(),
+        role: (userDataFromResponse.rol || 'user').toLowerCase(),
+        name: userDataFromResponse.nombre || userDataFromResponse.Nombre,
+        email: userDataFromResponse.email || userDataFromResponse.Email,
+        points: userDataFromResponse.puntosTotales || userDataFromResponse.PuntosTotales || 0,
+        rank: getRankFromPoints(userDataFromResponse.puntosTotales || userDataFromResponse.PuntosTotales || 0),
         token: loginResponse.token
       };
+
+      console.log('👤 Datos transformados del usuario:', userData);
+
+      // Validar que tenemos los datos mínimos necesarios
+      if (!userData.id || !userData.token) {
+        throw new Error('Datos de usuario incompletos en la respuesta');
+      }
 
       // Guardar en el contexto de autenticación
       login(userData);
@@ -58,18 +75,28 @@ const LoginPage = () => {
         description: `Has iniciado sesión correctamente, ${userData.name}.`
       });
 
-      // Redirigir según el rol
-      if (userData.role === 'admin' || userData.role === 'centro') {
-        navigate('/center/dashboard');
-      } else {
-        navigate('/user/dashboard');
-      }
+      // Pequeño delay para asegurar que el estado se actualice
+      setTimeout(() => {
+        // TODOS los usuarios van al mismo dashboard
+        navigate('/user/dashboard', { replace: true });
+      }, 100);
 
     } catch (error) {
-      console.error('Error en login:', error);
+      console.error('❌ Error en login:', error);
+      
+      let errorMessage = "Credenciales incorrectas. Por favor, verifica tu email y contraseña.";
+      
+      if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+        errorMessage = "Error de conexión. Verifica que el servidor esté funcionando en http://localhost:5153.";
+      } else if (error.message.includes('401')) {
+        errorMessage = "Email o contraseña incorrectos.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
       toast({
         title: "Error",
-        description: error.message || "Credenciales incorrectas. Por favor, verifica tu email y contraseña.",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -96,6 +123,7 @@ const LoginPage = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
           className="w-full max-w-md"
         >
           <div className="text-center mb-8">
@@ -106,14 +134,16 @@ const LoginPage = () => {
             <p className="text-gray-600 mt-2">Inicia sesión para continuar</p>
           </div>
 
-          <Card className="shadow-xl">
-            <CardHeader>
-              <CardTitle className="text-2xl text-center">Iniciar Sesión</CardTitle>
+          <Card className="shadow-xl border-0">
+            <CardHeader className="text-center pb-4">
+              <CardTitle className="text-2xl font-bold text-gray-800">Iniciar Sesión</CardTitle>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Correo Electrónico</Label>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="space-y-3">
+                  <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                    Correo Electrónico
+                  </Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                     <Input
@@ -122,15 +152,17 @@ const LoginPage = () => {
                       placeholder="tu@email.com"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="pl-10"
+                      className="pl-10 h-11 border-gray-300 focus:border-green-500 focus:ring-green-500"
                       required
                       disabled={isLoading}
                     />
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="password">Contraseña</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                    Contraseña
+                  </Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                     <Input
@@ -139,16 +171,17 @@ const LoginPage = () => {
                       placeholder="••••••••"
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className="pl-10"
+                      className="pl-10 h-11 border-gray-300 focus:border-green-500 focus:ring-green-500"
                       required
                       disabled={isLoading}
+                      minLength={6}
                     />
                   </div>
                 </div>
 
                 <Button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
+                  className="w-full h-11 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold shadow-lg transition-all duration-200"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -162,12 +195,12 @@ const LoginPage = () => {
                 </Button>
               </form>
 
-              <div className="mt-6 text-center">
+              <div className="mt-6 text-center pt-4 border-t border-gray-200">
                 <p className="text-sm text-gray-600">
                   ¿No tienes cuenta?{' '}
                   <Link
                     to="/register"
-                    className="text-green-600 hover:text-green-700 font-semibold"
+                    className="text-green-600 hover:text-green-700 font-semibold underline-offset-2 hover:underline transition-colors"
                     onClick={(e) => isLoading && e.preventDefault()}
                   >
                     Regístrate aquí
@@ -180,7 +213,7 @@ const LoginPage = () => {
           <div className="mt-6 text-center">
             <Link
               to="/"
-              className="text-sm text-gray-600 hover:text-gray-800"
+              className="text-sm text-gray-600 hover:text-gray-800 font-medium transition-colors"
               onClick={(e) => isLoading && e.preventDefault()}
             >
               ← Volver al inicio
