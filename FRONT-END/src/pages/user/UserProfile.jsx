@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { ArrowLeft, LogOut, Share2, Copy, Recycle, Wind, TreePine, Building, Store } from 'lucide-react';
+import { ArrowLeft, LogOut, Share2, Copy, Recycle, Wind, TreePine, Building, Store, Loader2, RefreshCw } from 'lucide-react';
 import QRCode from 'qrcode.react';
 import { motion } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
@@ -25,31 +25,142 @@ const UserProfile = () => {
   const [phrase] = React.useState(motivationalPhrases[Math.floor(Math.random() * motivationalPhrases.length)]);
   const [userEntities, setUserEntities] = useState({ hasCenter: false, hasCommerce: false });
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const API_BASE_URL = 'http://localhost:5153/api';
+
+  const checkUserEntities = async (userId) => {
+    try {
+      console.log('🔍 Verificando entidades para usuario ID:', userId);
+      
+      if (!userId) {
+        console.error('❌ No hay ID de usuario');
+        return { hasCenter: false, hasCommerce: false };
+      }
+
+      let hasCenter = false;
+      let hasCommerce = false;
+
+      // Verificar si tiene centro de acopio usando el endpoint específico
+      try {
+        console.log('📊 Verificando centro para usuario:', userId);
+        const centerResponse = await fetch(`${API_BASE_URL}/CentroAcopio/usuario/${userId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${user?.token}`
+          }
+        });
+        
+        console.log('📊 Respuesta centro:', centerResponse.status);
+        
+        if (centerResponse.ok) {
+          const centerData = await centerResponse.json();
+          console.log('✅ Centro encontrado:', centerData);
+          hasCenter = true;
+        } else if (centerResponse.status === 404) {
+          console.log('📭 El usuario no tiene centro de acopio registrado');
+          hasCenter = false;
+        } else {
+          console.warn('⚠️ Error al obtener centro:', centerResponse.status, centerResponse.statusText);
+          hasCenter = false;
+        }
+      } catch (centerError) {
+        console.error('❌ Error de conexión al verificar centro:', centerError);
+        hasCenter = false;
+      }
+
+      // Verificar si tiene comercio - obtener todos los comercios y filtrar
+      try {
+        console.log('🏪 Verificando comercios para usuario:', userId);
+        const commerceResponse = await fetch(`${API_BASE_URL}/Comercio`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${user?.token}`
+          }
+        });
+        
+        console.log('🏪 Respuesta comercios:', commerceResponse.status);
+        
+        if (commerceResponse.ok) {
+          const commerces = await commerceResponse.json();
+          console.log('🏪 Comercios encontrados:', commerces);
+          
+          // Buscar si algún comercio pertenece a este usuario
+          hasCommerce = commerces.some(commerce => {
+            console.log(`Comercio ${commerce.idComercio} - Usuario: ${commerce.idUsuario} vs ${userId}`);
+            return commerce.idUsuario == userId;
+          });
+          
+          console.log('🏪 Usuario tiene comercio:', hasCommerce);
+        } else {
+          console.warn('⚠️ No se pudieron obtener comercios:', commerceResponse.status, commerceResponse.statusText);
+          hasCommerce = false;
+        }
+      } catch (commerceError) {
+        console.error('❌ Error de conexión al verificar comercios:', commerceError);
+        hasCommerce = false;
+      }
+
+      console.log('✅ Resultados finales:', { hasCenter, hasCommerce });
+      
+      return { hasCenter, hasCommerce };
+    } catch (error) {
+      console.error('❌ Error general verificando entidades:', error);
+      return { hasCenter: false, hasCommerce: false };
+    }
+  };
+
+  const loadUserEntities = async (isManualRefresh = false) => {
+    try {
+      if (isManualRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      
+      console.log('🔄 Cargando entidades del usuario...');
+      
+      if (!user?.id) {
+        console.error('❌ No hay usuario o ID de usuario');
+        setUserEntities({ hasCenter: false, hasCommerce: false });
+        return;
+      }
+
+      const entities = await checkUserEntities(user.id);
+      console.log('✅ Entidades cargadas:', entities);
+      
+      setUserEntities(entities);
+
+      if (isManualRefresh) {
+        toast({
+          title: "Datos actualizados",
+          description: "La información se ha actualizado correctamente",
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error cargando entidades:', error);
+      if (isManualRefresh) {
+        toast({
+          title: "Error de conexión",
+          description: "No se pudieron verificar los permisos de administración",
+          variant: "destructive"
+        });
+      }
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    const checkUserEntities = async () => {
-      if (!user?.id) return;
-      
-      try {
-        // Verificar si tiene centro de acopio
-        const centerResponse = await fetch(`/api/CentroAcopio/usuario/${user.id}`);
-        const hasCenter = centerResponse.ok;
-
-        // Verificar si tiene comercio
-        const commerceResponse = await fetch(`/api/Comercio/usuario/${user.id}`);
-        const hasCommerce = commerceResponse.ok;
-
-        setUserEntities({ hasCenter, hasCommerce });
-      } catch (error) {
-        console.error('Error verificando entidades del usuario:', error);
-        setUserEntities({ hasCenter: false, hasCommerce: false });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkUserEntities();
+    loadUserEntities();
   }, [user?.id]);
+
+  const handleRefresh = () => {
+    loadUserEntities(true);
+  };
 
   const handleLogout = () => {
     logout();
@@ -62,6 +173,15 @@ const UserProfile = () => {
   };
 
   const copyToClipboard = (text) => {
+    if (!text) {
+      toast({
+        title: "Error",
+        description: "No hay ID de usuario para copiar",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     navigator.clipboard.writeText(text);
     toast({
       title: "¡Copiado!",
@@ -72,6 +192,16 @@ const UserProfile = () => {
   const kgReciclados = 84;
   const co2Ahorrado = Math.round(kgReciclados * 2.5);
   const arbolesEquiv = (kgReciclados / 1000 * 17).toFixed(2);
+
+  const formatMemberSince = (dateString) => {
+    if (!dateString) return 'Fecha no disponible';
+    try {
+      const date = new Date(dateString);
+      return isNaN(date.getTime()) ? 'Fecha no disponible' : date.toLocaleDateString();
+    } catch {
+      return 'Fecha no disponible';
+    }
+  };
 
   return (
     <>
@@ -88,7 +218,7 @@ const UserProfile = () => {
             className="mb-4 text-green-700 hover:text-green-800"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Volver
+            Volver al Dashboard
           </Button>
 
           <motion.div
@@ -106,10 +236,10 @@ const UserProfile = () => {
                     </AvatarFallback>
                   </Avatar>
                   <div className="text-center sm:text-left">
-                    <h1 className="text-3xl font-bold text-gray-800">{user?.name}</h1>
-                    <p className="text-gray-600">{user?.email}</p>
+                    <h1 className="text-3xl font-bold text-gray-800">{user?.name || 'Usuario'}</h1>
+                    <p className="text-gray-600">{user?.email || 'Email no disponible'}</p>
                     <p className="text-sm text-gray-500 mt-1">
-                      Miembro desde {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Fecha no disponible'}
+                      Miembro desde {formatMemberSince(user?.createdAt)}
                     </p>
                   </div>
                 </div>
@@ -123,13 +253,15 @@ const UserProfile = () => {
               </CardHeader>
               <CardContent className="flex flex-col sm:flex-row items-center justify-around gap-6">
                 <div className="bg-white p-4 rounded-lg border-2 border-dashed border-green-300">
-                  <QRCode value={user?.id || 'no-id'} size={128} />
+                  <QRCode value={user?.id ? user.id.toString() : 'no-id'} size={128} />
                 </div>
                 <div className="flex-grow text-center sm:text-left">
                   <p className="text-sm text-gray-600 mb-2">Usa este QR en los centros de acopio</p>
                   <div className="bg-gray-100 rounded-lg p-3 flex items-center justify-between">
-                    <span className="font-mono text-gray-700 text-sm truncate">{user?.id || 'ID no disponible'}</span>
-                    <Button variant="ghost" size="icon" onClick={() => copyToClipboard(user?.id)}>
+                    <span className="font-mono text-gray-700 text-sm truncate">
+                      {user?.id ? user.id.toString() : 'ID no disponible'}
+                    </span>
+                    <Button variant="ghost" size="icon" onClick={() => copyToClipboard(user?.id?.toString())}>
                       <Copy className="w-4 h-4" />
                     </Button>
                   </div>
@@ -161,31 +293,73 @@ const UserProfile = () => {
               </CardContent>
             </Card>
 
-            {/* Panel de Administración - SOLO si el usuario tiene entidades */}
-            {!loading && (userEntities.hasCenter || userEntities.hasCommerce) && (
+            {/* Panel de Administración */}
+            {loading ? (
               <Card className="shadow-xl">
                 <CardHeader>
                   <CardTitle>Mis Puntos de Gestión</CardTitle>
                 </CardHeader>
+                <CardContent className="flex justify-center py-8">
+                  <Loader2 className="w-8 h-8 text-green-600 animate-spin" />
+                  <span className="ml-2 text-gray-600">Verificando permisos...</span>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="shadow-xl">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Mis Puntos de Gestión</span>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={handleRefresh} 
+                      disabled={refreshing}
+                      title="Actualizar permisos"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {userEntities.hasCenter && (
-                      <Button 
-                        onClick={() => navigate('/center/dashboard')}
-                        className="h-24 flex flex-col gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white transition-all duration-300 transform hover:scale-105"
-                      >
-                        <Building className="w-8 h-8" />
-                        <span className="font-semibold">Administrar Centro de Reciclaje</span>
-                      </Button>
-                    )}
-                    {userEntities.hasCommerce && (
-                      <Button 
-                        onClick={() => navigate('/commerce/dashboard')}
-                        className="h-24 flex flex-col gap-2 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white transition-all duration-300 transform hover:scale-105"
-                      >
-                        <Store className="w-8 h-8" />
-                        <span className="font-semibold">Administrar EcoMerts</span>
-                      </Button>
+                  <div className="space-y-4">
+                    {(userEntities.hasCenter || userEntities.hasCommerce) ? (
+                      <>
+                        <p className="text-sm text-gray-600 mb-4">
+                          Tienes acceso a los siguientes paneles de administración:
+                        </p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {userEntities.hasCenter && (
+                            <Button 
+                              onClick={() => navigate('/center/dashboard')}
+                              className="h-24 flex flex-col gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white transition-all duration-300 transform hover:scale-105"
+                            >
+                              <Building className="w-8 h-8" />
+                              <span className="font-semibold">Administrar Centro de Reciclaje</span>
+                            </Button>
+                          )}
+                          {userEntities.hasCommerce && (
+                            <Button 
+                              onClick={() => navigate('/commerce/dashboard')}
+                              className="h-24 flex flex-col gap-2 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white transition-all duration-300 transform hover:scale-105"
+                            >
+                              <Store className="w-8 h-8" />
+                              <span className="font-semibold">Administrar EcoMerts</span>
+                            </Button>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-center py-6">
+                        <p className="text-gray-600 mb-4">No tienes centros de reciclaje o comercios asignados.</p>
+                        <div className="space-y-3">
+                          <p className="text-sm text-gray-500">
+                            Si crees que deberías tener acceso, contacta con administración o verifica que tus datos estén registrados en el sistema.
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            Usa el botón de actualizar para verificar cambios recientes.
+                          </p>
+                        </div>
+                      </div>
                     )}
                   </div>
                 </CardContent>
