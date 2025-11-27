@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, MapPin, Clock, Recycle, Plus } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, Recycle, Plus, Phone } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import { getCentros } from '../../Service/CentroServices';
 
 import L from 'leaflet';
 
@@ -18,27 +19,20 @@ L.Icon.Default.mergeOptions({
 const RecyclingMap = () => {
   const navigate = useNavigate();
   const [selectedMaterial, setSelectedMaterial] = useState('all');
+  const [centers, setCenters] = useState([]);
 
-  const centers = [
-    {
-      id: 1,
-      name: 'Centro Eco-Verde',
-      lat: 19.4326,
-      lng: -99.1332,
-      address: 'Av. Reforma 123, CDMX',
-      hours: 'Lun-Vie: 8:00-18:00',
-      materials: ['Plástico', 'Papel', 'Vidrio']
-    },
-    {
-      id: 2,
-      name: 'Recicladora del Norte',
-      lat: 19.4426,
-      lng: -99.1432,
-      address: 'Calle Norte 456, CDMX',
-      hours: 'Lun-Sáb: 9:00-17:00',
-      materials: ['Metal', 'Electrónicos', 'Papel']
-    }
-  ];
+  useEffect(() => {
+    const fetchCenters = async () => {
+      try {
+        const data = await getCentros();
+        setCenters(data);
+      } catch (error) {
+        console.error("Error fetching centers:", error);
+      }
+    };
+
+    fetchCenters();
+  }, []);
 
   return (
     <>
@@ -80,6 +74,7 @@ const RecyclingMap = () => {
               >
                 Todos
               </Button>
+              {/* Material filters are kept but currently don't filter as backend data might not have materials yet */}
               <Button
                 variant={selectedMaterial === 'plastic' ? 'default' : 'outline'}
                 onClick={() => setSelectedMaterial('plastic')}
@@ -104,27 +99,23 @@ const RecyclingMap = () => {
             </div>
 
             <div className="h-96 rounded-xl overflow-hidden border-2 border-green-200">
-              <MapContainer center={[18.186356, -91.041947]} zoom={13} style={{ height: '100%', width: '100%' }}>
+              <MapContainer center={[18.186356, -91.041947]} zoom={10} style={{ height: '100%', width: '100%' }}>
                 <TileLayer
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 />
                 {centers.map(center => (
-                  <Marker key={center.id} position={[center.lat, center.lng]}>
+                  <Marker key={center.IdCentroAcopio} position={[center.Latitud, center.Longitud]}>
                     <Popup>
                       <div className="p-2">
-                        <h3 className="font-bold text-green-700">{center.name}</h3>
+                        <h3 className="font-bold text-green-700">{center.Nombre}</h3>
                         <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
-                          <MapPin className="w-3 h-3" />
-                          {center.address}
+                          <Phone className="w-3 h-3" />
+                          {center.Telefono}
                         </p>
                         <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
                           <Clock className="w-3 h-3" />
-                          {center.hours}
-                        </p>
-                        <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
-                          <Recycle className="w-3 h-3" />
-                          {center.materials.join(', ')}
+                          {center.HorarioAtencion}
                         </p>
                       </div>
                     </Popup>
@@ -136,19 +127,15 @@ const RecyclingMap = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {centers.map(center => (
-              <div key={center.id} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-                <h3 className="font-bold text-lg mb-2 text-gray-800">{center.name}</h3>
+              <div key={center.IdCentroAcopio} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+                <h3 className="font-bold text-lg mb-2 text-gray-800">{center.Nombre}</h3>
                 <p className="text-sm text-gray-600 flex items-center gap-2 mb-2">
-                  <MapPin className="w-4 h-4 text-green-600" />
-                  {center.address}
+                  <Phone className="w-4 h-4 text-green-600" />
+                  {center.Telefono}
                 </p>
                 <p className="text-sm text-gray-600 flex items-center gap-2 mb-2">
                   <Clock className="w-4 h-4 text-green-600" />
-                  {center.hours}
-                </p>
-                <p className="text-sm text-gray-600 flex items-center gap-2 mb-4">
-                  <Recycle className="w-4 h-4 text-green-600" />
-                  {center.materials.join(', ')}
+                  {center.HorarioAtencion}
                 </p>
                 <Button className="w-full bg-green-600 hover:bg-green-700">
                   Cómo llegar

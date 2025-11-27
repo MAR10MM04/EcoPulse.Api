@@ -1,14 +1,8 @@
 {
   "version": 2,
-<<<<<<< Updated upstream
   "dgSpecHash": "PMcbDGiBJ18=",
   "success": true,
   "projectFilePath": "C:\\Proyectos\\EcoPulse.Api\\EcoPulse.Api\\EcoPulse.Api.csproj",
-=======
-  "dgSpecHash": "Xu0jTbfHSFU=",
-  "success": true,
-  "projectFilePath": "C:\\codes\\EcoPulse.Api\\EcoPulse.Api\\EcoPulse.Api.csproj",
->>>>>>> Stashed changes
   "expectedPackageFiles": [
     "C:\\Users\\angel\\.nuget\\packages\\bcrypt.net-next\\4.0.3\\bcrypt.net-next.4.0.3.nupkg.sha512",
     "C:\\Users\\angel\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",
@@ -69,5 +63,12 @@
     "C:\\Users\\angel\\.nuget\\packages\\system.text.json\\8.0.0\\system.text.json.8.0.0.nupkg.sha512",
     "C:\\Users\\angel\\.nuget\\packages\\system.threading.channels\\6.0.0\\system.threading.channels.6.0.0.nupkg.sha512"
   ],
-  "logs": []
+  "logs": [
+    {
+      "code": "Undefined",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "Problema al leer el archivo de caché C:\\Proyectos\\EcoPulse.Api\\EcoPulse.Api\\obj\\project.nuget.cache : Invalid property identifier character: <. Path 'version', line 3, position 0."
+    }
+  ]
 }

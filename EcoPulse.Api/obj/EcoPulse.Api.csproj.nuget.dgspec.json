@@ -1,7 +1,6 @@
 {
   "format": 1,
   "restore": {
-<<<<<<< Updated upstream
     "C:\\Proyectos\\EcoPulse.Api\\EcoPulse.Api\\EcoPulse.Api.csproj": {}
   },
   "projects": {
@@ -13,19 +12,6 @@
         "projectPath": "C:\\Proyectos\\EcoPulse.Api\\EcoPulse.Api\\EcoPulse.Api.csproj",
         "packagesPath": "C:\\Users\\angel\\.nuget\\packages\\",
         "outputPath": "C:\\Proyectos\\EcoPulse.Api\\EcoPulse.Api\\obj\\",
-=======
-    "C:\\codes\\EcoPulse.Api\\EcoPulse.Api\\EcoPulse.Api.csproj": {}
-  },
-  "projects": {
-    "C:\\codes\\EcoPulse.Api\\EcoPulse.Api\\EcoPulse.Api.csproj": {
-      "version": "1.0.0",
-      "restore": {
-        "projectUniqueName": "C:\\codes\\EcoPulse.Api\\EcoPulse.Api\\EcoPulse.Api.csproj",
-        "projectName": "EcoPulse.Api",
-        "projectPath": "C:\\codes\\EcoPulse.Api\\EcoPulse.Api\\EcoPulse.Api.csproj",
-        "packagesPath": "C:\\Users\\PENDERTUGA\\.nuget\\packages\\",
-        "outputPath": "C:\\codes\\EcoPulse.Api\\EcoPulse.Api\\obj\\",
->>>>>>> Stashed changes
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\angel\\AppData\\Roaming\\NuGet\\NuGet.Config"
