@@ -15,11 +15,20 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const { toast } = useToast();
+
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
   const [isLoading, setIsLoading] = useState(false);
+
+  // Función auxiliar para determinar el rango (mantener si no viene del backend)
+  const getRankFromPoints = (points) => {
+    if (points >= 500) return 'Oro';
+    if (points >= 250) return 'Plata';
+    if (points >= 100) return 'Bronce';
+    return 'Novato';
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -36,35 +45,50 @@ const LoginPage = () => {
     }
 
     try {
-      // Llamar al servicio de login
       const loginResponse = await loginUsuario(formData.email, formData.password);
 
-      console.log('🔐 Respuesta completa del login:', loginResponse);
+      console.log('🔐 Respuesta cruda del login:', loginResponse); // 👀 Paso 1: Revisa la respuesta del servidor
 
-      // Verificar que la respuesta tenga la estructura esperada
-      if (!loginResponse || (!loginResponse.usuarioResponse && !loginResponse.token)) {
-        throw new Error('Respuesta del servidor inválida');
+      // Usa la propiedad 'Usuario' o 'usuarioResponse' o la respuesta directa
+      const u = loginResponse.Usuario || loginResponse.usuarioResponse || loginResponse;
+
+      if (!u || (!loginResponse.Token && !loginResponse.token)) {
+        throw new Error("Respuesta inválida o incompleta del servidor. Falta el token.");
       }
 
-      // Determinar de dónde vienen los datos del usuario
-      const userDataFromResponse = loginResponse.usuarioResponse || loginResponse;
-      
-      // Transformar los datos del usuario para el contexto de autenticación
+      // ----------------------------------------------------
+      // 🟢 Extracción de Datos Robusta
+      // ----------------------------------------------------
+
+      // Aseguramos que los puntos se obtengan y se conviertan a número
+      const pointsValue = parseInt(u.PuntosTotales || u.puntosTotales || 0, 10);
+
       const userData = {
-        id: userDataFromResponse.idUsuario?.toString() || userDataFromResponse.IdUsuario?.toString(),
-        role: (userDataFromResponse.rol || 'user').toLowerCase(),
-        name: userDataFromResponse.nombre || userDataFromResponse.Nombre,
-        email: userDataFromResponse.email || userDataFromResponse.Email,
-        points: userDataFromResponse.puntosTotales || userDataFromResponse.PuntosTotales || 0,
-        rank: getRankFromPoints(userDataFromResponse.puntosTotales || userDataFromResponse.PuntosTotales || 0),
-        token: loginResponse.token
+        // ID: Busca varias opciones de casing y fuerza a string
+        id: u.IdUsuario?.toString() || u.idUsuario?.toString() || u.id?.toString(),
+
+        name: u.Nombre || u.nombre,
+        email: u.Email || u.email,
+        role: u.Rol || u.rol || 'user',
+
+        // PUNTOS (CORREGIDO)
+        points: pointsValue,
+
+        // RANGOS (Busca la propiedad específica o usa la función auxiliar)
+        rank: u.Rango || u.rango || getRankFromPoints(pointsValue),
+        progreso: u.ProgresoRango || u.progresoRango || 0,
+        siguienteRango: u.SiguienteRango || u.siguienteRango || '',
+        colorRango: u.ColorRango || u.colorRango || '',
+        iconoRango: u.IconoRango || u.iconoRango,
+
+        token: loginResponse.Token || loginResponse.token
       };
 
-      console.log('👤 Datos transformados del usuario:', userData);
+      console.log('👤 Datos transformados finales:', userData); // 👀 Paso 2: Verifica que 'points' tenga un número
 
-      // Validar que tenemos los datos mínimos necesarios
+      // Validar datos mínimos
       if (!userData.id || !userData.token) {
-        throw new Error('Datos de usuario incompletos en la respuesta');
+        throw new Error("Datos de usuario incompletos (ID o Token) en la respuesta");
       }
 
       // Guardar en el contexto de autenticación
@@ -75,23 +99,17 @@ const LoginPage = () => {
         description: `Has iniciado sesión correctamente, ${userData.name}.`
       });
 
-      // Pequeño delay para asegurar que el estado se actualice
-      setTimeout(() => {
-        // TODOS los usuarios van al mismo dashboard
-        navigate('/user/dashboard', { replace: true });
-      }, 100);
+      setTimeout(() => navigate('/user/dashboard', { replace: true }), 200);
 
     } catch (error) {
       console.error('❌ Error en login:', error);
-      
-      let errorMessage = "Credenciales incorrectas. Por favor, verifica tu email y contraseña.";
-      
-      if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
-        errorMessage = "Error de conexión. Verifica que el servidor esté funcionando en http://localhost:5153.";
-      } else if (error.message.includes('401')) {
+
+      let errorMessage = error.message || "Error al iniciar sesión. Verifica credenciales y conexión.";
+
+      if (errorMessage.includes('NetworkError') || errorMessage.includes('Failed to fetch')) {
+        errorMessage = "Error de conexión con el servidor.";
+      } else if (errorMessage.includes('401')) {
         errorMessage = "Email o contraseña incorrectos.";
-      } else if (error.message) {
-        errorMessage = error.message;
       }
 
       toast({
@@ -104,15 +122,8 @@ const LoginPage = () => {
     }
   };
 
-  // Función auxiliar para determinar el rango basado en puntos
-  const getRankFromPoints = (points) => {
-    if (points >= 1000) return 'Oro';
-    if (points >= 500) return 'Plata';
-    if (points >= 100) return 'Bronce';
-    return 'Novato';
-  };
-
   return (
+    // ... El resto del JSX es el mismo ...
     <>
       <Helmet>
         <title>Iniciar Sesión - Eco-Pulse</title>

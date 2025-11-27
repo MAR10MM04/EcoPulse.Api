@@ -10,23 +10,17 @@ const fetchWithAuth = async (url, options = {}) => {
         ...options.headers,
     };
 
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    }
+    if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const response = await fetch(url, {
-        ...options,
-        headers,
-    });
+    const response = await fetch(url, { ...options, headers });
 
-    // Manejo de errores uniforme
     if (!response.ok) {
         let errorMessage = 'Error en la solicitud';
 
         try {
             const errorData = await response.json();
             errorMessage = errorData.message || errorData.title || errorMessage;
-        } catch (e) {
+        } catch (err) {
             errorMessage = `Error ${response.status}: ${response.statusText}`;
         }
 
@@ -38,7 +32,10 @@ const fetchWithAuth = async (url, options = {}) => {
     return response.json();
 };
 
-// 🔄 Transformar datos del backend → frontend
+/* -----------------------------------------
+   🔄 TRANSFORMADORES (Backend → Frontend)
+----------------------------------------- */
+
 const transformUsuario = (u) => {
     return {
         IdUsuario: u.idUsuario,
@@ -46,17 +43,21 @@ const transformUsuario = (u) => {
         Email: u.email,
         Rol: u.rol,
         PuntosTotales: u.puntosTotales,
+
+        // ⭐ NUEVOS CAMPOS DE RANGO
+        Rango: u.rango,
+        ProgresoRango: u.progresoRango,
+        SiguienteRango: u.siguienteRango,
+        ColorRango: u.colorRango,
+        IconoRango: u.iconoRango,
+
         TotalEntregas: u.totalEntregas,
         PuntosPromedioPorEntrega: u.puntosPromedioPorEntrega,
+
         CentroAcopio: u.centroAcopio
             ? {
                 IdCentroAcopio: u.centroAcopio.idCentroAcopio,
                 Nombre: u.centroAcopio.nombre,
-                Direccion: u.centroAcopio.direccion,
-                Ciudad: u.centroAcopio.ciudad,
-                Telefono: u.centroAcopio.telefono,
-                HorarioAtencion: u.centroAcopio.horarioAtencion,
-                Estado: u.centroAcopio.estado,
             }
             : null,
     };
@@ -69,25 +70,43 @@ const transformUsuarioDetail = (u) => {
         Email: u.email,
         Rol: u.rol,
         PuntosTotales: u.puntosTotales,
+
+        // ⭐ NUEVOS CAMPOS DE RANGO
+        Rango: u.rango,
+        ProgresoRango: u.progresoRango,
+        SiguienteRango: u.siguienteRango,
+        ColorRango: u.colorRango,
+        IconoRango: u.iconoRango,
+
         CentroAcopio: u.centroAcopio ?? null,
         Entregas: u.entregas ?? [],
     };
 };
-// GET todos los usuarios
+
+/* -----------------------------------------
+   📌 ENDPOINTS
+----------------------------------------- */
+
+// GET: usuarios
 export const getUsuarios = async () => {
     const data = await fetchWithAuth(API_URL);
     return data.map(transformUsuario);
 };
 
-// GET usuario por ID
+// GET: usuario por ID
 export const getUsuarioById = async (id) => {
     const data = await fetchWithAuth(`${API_URL}/${id}`);
     return transformUsuarioDetail(data);
 };
 
-// POST crear usuario
+// GET: información de rango de un usuario
+export const getUsuarioRango = async (id) => {
+    return await fetchWithAuth(`${API_URL}/${id}/rango`);
+};
+
+// POST: crear usuario
 export const createUsuario = async (usuarioData) => {
-    const dataToSend = {
+    const body = {
         Nombre: usuarioData.Nombre,
         Email: usuarioData.Email,
         Password: usuarioData.Password,
@@ -95,15 +114,15 @@ export const createUsuario = async (usuarioData) => {
 
     const data = await fetchWithAuth(API_URL, {
         method: 'POST',
-        body: JSON.stringify(dataToSend),
+        body: JSON.stringify(body),
     });
 
     return transformUsuario(data);
 };
 
-// PUT actualizar usuario
+// PUT: actualizar usuario
 export const updateUsuario = async (id, usuarioData) => {
-    const dataToSend = {
+    const body = {
         Nombre: usuarioData.Nombre,
         Email: usuarioData.Email,
         Rol: usuarioData.Rol,
@@ -111,32 +130,35 @@ export const updateUsuario = async (id, usuarioData) => {
 
     await fetchWithAuth(`${API_URL}/${id}`, {
         method: 'PUT',
-        body: JSON.stringify(dataToSend),
+        body: JSON.stringify(body),
     });
 
     return true;
 };
 
-// DELETE eliminar usuario
+// DELETE: eliminar usuario
 export const deleteUsuario = async (id) => {
-    await fetchWithAuth(`${API_URL}/${id}`, {
-        method: 'DELETE',
-    });
-
+    await fetchWithAuth(`${API_URL}/${id}`, { method: 'DELETE' });
     return id;
 };
 
-// POST login
+// POST: login
 export const loginUsuario = async (email, password) => {
     const data = await fetchWithAuth(`${API_URL}/login`, {
         method: 'POST',
         body: JSON.stringify({ Email: email, Password: password }),
     });
 
-    // Guardar token en localStorage
+    // Guardar token
     if (data.token) {
         localStorage.setItem('token', data.token);
     }
 
-    return data;
+    // 🔄 devolvemos usuario + rango incluido
+    return {
+        Token: data.token,
+        Usuario: {
+            ...data.usuarioResponse,
+        },
+    };
 };

@@ -9,18 +9,19 @@ import { useToast } from '@/components/ui/use-toast';
 import { Leaf, ArrowLeft, User } from 'lucide-react';
 import { createUsuario } from '@/Service/UsuarioService';
 
-
 const RegisterPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Estado limpio basado en tu corrección
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    password: '',
-    address: ''
+    password: ''
   });
-  const [isLoading, setIsLoading] = useState(false);
 
+  // Lógica corregida de envío
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -36,29 +37,26 @@ const RegisterPage = () => {
     }
 
     try {
-      // Preparar datos para la API (solo los campos requeridos)
+      // Construcción del objeto exacta como en tu corrección
       const usuarioData = {
         Nombre: formData.name,
         Email: formData.email,
         Password: formData.password
       };
 
-      // Llamar al servicio para crear el usuario en la base de datos
       await createUsuario(usuarioData);
 
       toast({
         title: "¡Cuenta creada!",
-        description: "Tu cuenta ha sido creada exitosamente en nuestra base de datos. Ahora puedes iniciar sesión."
+        description: "Tu cuenta ha sido creada exitosamente."
       });
 
-      // Redirigir al login después del registro exitoso
       setTimeout(() => navigate('/login'), 1500);
 
     } catch (error) {
-      console.error('Error al crear usuario:', error);
       toast({
         title: "Error",
-        description: error.message || "Hubo un problema al crear la cuenta. Inténtalo de nuevo.",
+        description: error.message || "No se pudo crear la cuenta",
         variant: "destructive"
       });
     } finally {
@@ -147,8 +145,6 @@ const RegisterPage = () => {
                   minLength={6}
                 />
               </div>
-
-
 
               <Button
                 type="submit"
