@@ -13,11 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("EcoPulse.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-<<<<<<< Updated upstream
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0f90dc66ae0f91b151881e570536c99104083308")]
-=======
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+64f68f0de9f3f2805b27afb2eef2007fc57ff3a1")]
->>>>>>> Stashed changes
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+bc21040d678411ba6afd167f827aee61ba39fb0f")]
 [assembly: System.Reflection.AssemblyProductAttribute("EcoPulse.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("EcoPulse.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
