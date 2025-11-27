@@ -2,7 +2,9 @@
 
 const API_URL = "http://localhost:5153/api/CentroAcopio";
 
-// Helper para incluir token automáticamente
+//
+// 🛡️ Helper con token automático
+//
 const fetchWithAuth = async (url, options = {}) => {
     const token = localStorage.getItem("token");
 
@@ -20,13 +22,12 @@ const fetchWithAuth = async (url, options = {}) => {
         headers,
     });
 
-    // Manejo global de errores
     if (!response.ok) {
         let errorMessage = "Error en la solicitud";
 
         try {
-            const errorData = await response.json();
-            errorMessage = errorData.message || errorData.title || errorMessage;
+            const err = await response.json();
+            errorMessage = err.message || err.title || errorMessage;
         } catch {
             errorMessage = `Error ${response.status}: ${response.statusText}`;
         }
@@ -39,42 +40,19 @@ const fetchWithAuth = async (url, options = {}) => {
     return response.json();
 };
 
-//
-// 🔄 TRANSFORMADORES (Backend → Frontend)
-//
-const transformCentro = (c) => {
-    return {
-        IdCentroAcopio: c.idCentroAcopio,
-        Nombre: c.nombre,
-        Direccion: c.direccion,
-        Telefono: c.telefono,
-        HorarioAtencion: c.horarioAtencion,
-        Ciudad: c.ciudad,
-        Estado: c.estado,
-        IdUsuario: c.idUsuario,
-        IdMaterial: c.idMaterial,
-        NombreUsuario: c.nombreUsuario,
-        NombreMaterial: c.nombreMaterial,
-    };
-};
 
-const transformCentroDetail = (c) => {
-    return {
-        IdCentroAcopio: c.idCentroAcopio,
-        Nombre: c.nombre,
-        Direccion: c.direccion,
-        Telefono: c.telefono,
-        HorarioAtencion: c.horarioAtencion,
-        Ciudad: c.ciudad,
-        Estado: c.estado,
-        IdUsuario: c.idUsuario,
-        IdMaterial: c.idMaterial,
-        NombreUsuario: c.nombreUsuario,
-        NombreMaterial: c.nombreMaterial,
-        // Si necesitas entregas:
-        // Entregas: c.entregas ?? []
-    };
-};
+//
+// 🔄 TRANSFORMADOR (Backend → Frontend)
+//
+const transformCentro = (c) => ({
+    IdCentroAcopio: c.idCentroAcopio,
+    Nombre: c.nombre,
+    Latitud: c.latitud,
+    Longitud: c.longitud,
+    Telefono: c.telefono,
+    HorarioAtencion: c.horarioAtencion,
+    IdUsuario: c.idUsuario
+});
 
 //
 // 📌 GET: Todos los centros
@@ -89,54 +67,66 @@ export const getCentros = async () => {
 //
 export const getCentroById = async (id) => {
     const data = await fetchWithAuth(`${API_URL}/${id}`);
-    return transformCentroDetail(data);
+    return transformCentro(data);
+};
+
+//
+// 📌 GET: Centro por Usuario
+//
+export const getCentroByUsuario = async (idUsuario) => {
+    const data = await fetchWithAuth(`${API_URL}/usuario/${idUsuario}`);
+    return {
+        Nombre: data.nombre,
+        Latitud: data.latitud,
+        Longitud: data.longitud,
+        Telefono: data.telefono,
+        HorarioAtencion: data.horarioAtencion,
+        IdUsuario: data.idUsuario
+    };
 };
 
 //
 // 📌 POST: Crear centro
 //
 export const createCentro = async (centroData) => {
-    const toSend = {
+    const body = {
         Nombre: centroData.Nombre,
-        Direccion: centroData.Direccion,
+        Latitud: centroData.Latitud,
+        Longitud: centroData.Longitud,
         Telefono: centroData.Telefono,
         HorarioAtencion: centroData.HorarioAtencion,
-        Ciudad: centroData.Ciudad,
-        Estado: centroData.Estado,
         IdUsuario: centroData.IdUsuario,
-        IdMaterial: centroData.IdMaterial,
     };
 
-    const data = await fetchWithAuth(API_URL, {
+    return await fetchWithAuth(API_URL, {
         method: "POST",
-        body: JSON.stringify(toSend),
+        body: JSON.stringify(body),
     });
-
-    return data;
 };
 
 //
 // 📌 PUT: Actualizar centro
 //
 export const updateCentro = async (id, centroData) => {
-    const toSend = {
+    const body = {
         Nombre: centroData.Nombre,
-        Direccion: centroData.Direccion,
+        Latitud: centroData.Latitud,
+        Longitud: centroData.Longitud,
         Telefono: centroData.Telefono,
         HorarioAtencion: centroData.HorarioAtencion,
-        Ciudad: centroData.Ciudad,
-        Estado: centroData.Estado,
-        IdMaterial: centroData.IdMaterial,
     };
 
     await fetchWithAuth(`${API_URL}/${id}`, {
         method: "PUT",
-        body: JSON.stringify(toSend),
+        body: JSON.stringify(body),
     });
 
     return true;
 };
+
+//
 // 📌 DELETE: Eliminar centro
+//
 export const deleteCentro = async (id) => {
     await fetchWithAuth(`${API_URL}/${id}`, {
         method: "DELETE",

@@ -6,8 +6,30 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Building } from 'lucide-react';
-import { createCentro } from '@/Service/CentroServices';
+import { ArrowLeft, Building, MapPin } from 'lucide-react';
+import { createCentro } from '@/service/CentroServices';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix for default marker icon
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+// Component to handle map clicks
+const LocationMarker = ({ position, setPosition }) => {
+    const map = useMapEvents({
+        click(e) {
+            setPosition(e.latlng);
+        },
+    });
+
+    return position ? <Marker position={position} /> : null;
+};
 
 const LoginCentro = () => {
     const navigate = useNavigate();
@@ -20,13 +42,15 @@ const LoginCentro = () => {
         horarioAtencion: "",
         ciudad: "",
         estado: "",
+        latitud: "",
+        longitud: ""
     });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
         // Validación
-        if (!formData.nombre || !formData.direccion || !formData.telefono) {
+        if (!formData.nombre || !formData.telefono) {
             toast({
                 title: "Error",
                 description: "Completa todos los campos obligatorios.",
@@ -35,14 +59,24 @@ const LoginCentro = () => {
             return;
         }
 
+        let userId = 0;
+        try {
+            const storedUser = localStorage.getItem("eco-pulse-user");
+            if (storedUser) {
+                const parsedUser = JSON.parse(storedUser);
+                userId = Number(parsedUser.id);
+            }
+        } catch (error) {
+            console.error("Error getting user ID:", error);
+        }
+
         const payload = {
-            nombre: formData.nombre,
-            direccion: formData.direccion,
-            telefono: formData.telefono,
-            horarioAtencion: formData.horarioAtencion,
-            ciudad: formData.ciudad,
-            estado: formData.estado,
-            idUsuario: Number(localStorage.getItem("idUsuario")) || 1, // o el que estés usando
+            Nombre: formData.nombre,
+            Telefono: formData.telefono,
+            HorarioAtencion: formData.horarioAtencion || "",
+            IdUsuario: userId,
+            Latitud: formData.latitud || "0",
+            Longitud: formData.longitud || "0"
         };
 
         try {
@@ -63,6 +97,19 @@ const LoginCentro = () => {
             });
         }
     };
+
+    const setMapPosition = (latlng) => {
+        setFormData(prev => ({
+            ...prev,
+            latitud: latlng.lat,
+            longitud: latlng.lng
+        }));
+    };
+
+    const mapCenter = [18.186356, -91.041947];
+    const currentPosition = formData.latitud && formData.longitud
+        ? [formData.latitud, formData.longitud]
+        : null;
 
     return (
         <>
@@ -105,14 +152,6 @@ const LoginCentro = () => {
                                 onChange={e => setFormData({ ...formData, nombre: e.target.value })}
                             />
 
-                            {/* Dirección */}
-                            <Field
-                                label="Dirección *"
-                                id="direccion"
-                                value={formData.direccion}
-                                onChange={e => setFormData({ ...formData, direccion: e.target.value })}
-                            />
-
                             {/* Teléfono */}
                             <Field
                                 label="Teléfono *"
@@ -129,21 +168,38 @@ const LoginCentro = () => {
                                 onChange={e => setFormData({ ...formData, horarioAtencion: e.target.value })}
                             />
 
-                            {/* Ciudad */}
-                            <Field
-                                label="Ciudad"
-                                id="ciudad"
-                                value={formData.ciudad}
-                                onChange={e => setFormData({ ...formData, ciudad: e.target.value })}
-                            />
+                            {/* Mapa para Latitud y Longitud */}
+                            <div className="space-y-2">
+                                <Label>Ubicación del Centro (Selecciona en el mapa) *</Label>
+                                <div className="h-96 rounded-xl overflow-hidden border-2 border-green-200 relative z-0">
+                                    <MapContainer
+                                        center={mapCenter}
+                                        zoom={13}
+                                        style={{ height: '100%', width: '100%' }}
+                                    >
+                                        <TileLayer
+                                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                        />
+                                        <LocationMarker
+                                            position={currentPosition}
+                                            setPosition={setMapPosition}
+                                        />
+                                    </MapContainer>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4 mt-2">
+                                    <div className="text-sm text-gray-600">
+                                        <span className="font-semibold">Latitud:</span> {formData.latitud || "No seleccionada"}
+                                    </div>
+                                    <div className="text-sm text-gray-600">
+                                        <span className="font-semibold">Longitud:</span> {formData.longitud || "No seleccionada"}
+                                    </div>
+                                </div>
+                            </div>
 
-                            {/* Estado */}
-                            <Field
-                                label="Estado"
-                                id="estado"
-                                value={formData.estado}
-                                onChange={e => setFormData({ ...formData, estado: e.target.value })}
-                            />
+                            <div className="text-sm text-gray-500 mb-4">
+                                * Campos obligatorios
+                            </div>
 
                             <Button
                                 type="submit"
@@ -160,14 +216,17 @@ const LoginCentro = () => {
     );
 };
 
-const Field = ({ label, id, value, onChange }) => (
+const Field = ({ label, id, value, onChange, type = "text", placeholder = "", ...props }) => (
     <div className="space-y-2">
         <Label htmlFor={id}>{label}</Label>
         <Input
             id={id}
+            type={type}
             value={value}
             onChange={onChange}
+            placeholder={placeholder}
             className="border-gray-300 focus:border-green-500"
+            {...props}
         />
     </div>
 );

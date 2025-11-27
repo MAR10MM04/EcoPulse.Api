@@ -104,7 +104,7 @@ const RecyclingMap = () => {
             </div>
 
             <div className="h-96 rounded-xl overflow-hidden border-2 border-green-200">
-              <MapContainer center={[19.4326, -99.1332]} zoom={13} style={{ height: '100%', width: '100%' }}>
+              <MapContainer center={[18.186356, -91.041947]} zoom={13} style={{ height: '100%', width: '100%' }}>
                 <TileLayer
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
