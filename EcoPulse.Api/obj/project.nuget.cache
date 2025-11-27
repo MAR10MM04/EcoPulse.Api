@@ -1,8 +1,14 @@
 {
   "version": 2,
+<<<<<<< Updated upstream
   "dgSpecHash": "PMcbDGiBJ18=",
   "success": true,
   "projectFilePath": "C:\\Proyectos\\EcoPulse.Api\\EcoPulse.Api\\EcoPulse.Api.csproj",
+=======
+  "dgSpecHash": "Xu0jTbfHSFU=",
+  "success": true,
+  "projectFilePath": "C:\\codes\\EcoPulse.Api\\EcoPulse.Api\\EcoPulse.Api.csproj",
+>>>>>>> Stashed changes
   "expectedPackageFiles": [
     "C:\\Users\\angel\\.nuget\\packages\\bcrypt.net-next\\4.0.3\\bcrypt.net-next.4.0.3.nupkg.sha512",
     "C:\\Users\\angel\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",
