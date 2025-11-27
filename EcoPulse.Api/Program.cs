@@ -2,9 +2,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using EcoPulse.Api.Data;
+using EcoPulse.Api.Services; // ✅ AGREGAR ESTE USING
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
 // 1. CONFIGURACIÓN DE CONTROLLERS, SWAGGER, CORS
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -29,12 +31,11 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 2. CONFIGURACIÓN JWT (sigue igual)-
-
+// 2. CONFIGURACIÓN JWT (sigue igual)
 var jwtKey = builder.Configuration["Jwt:Key"];
 
 if (string.IsNullOrEmpty(jwtKey))
-    throw new Exception("❌ ERROR: Falta Jwt:Key en appsettings.json");
+    throw new Exception(" ERROR: Falta Jwt:Key en appsettings.json");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -55,8 +56,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-// 3. CONFIGURACIÓN DE MYSQL
+// ✅ 3. REGISTRAR EL SERVICIO DE RANGOS (AGREGA ESTA LÍNEA)
+builder.Services.AddScoped<IRangoService, RangoService>();
 
+// 4. CONFIGURACIÓN DE MYSQL
 builder.Services.AddDbContext<MyDbContext>(options =>
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -81,6 +84,7 @@ builder.Services.AddDbContext<MyDbContext>(options =>
 });
 
 var app = builder.Build();
+
 // Endpoint health check
 app.MapGet("/health", async (context) =>
 {
@@ -99,13 +103,11 @@ app.MapGet("/health", async (context) =>
 
 if (app.Environment.IsDevelopment())
 { 
-
     app.UseSwagger();
     app.UseSwaggerUI(); 
 }
 
 app.UseHttpsRedirection();
-
 app.UseRouting();
 app.UseCors("AllowAll");
 

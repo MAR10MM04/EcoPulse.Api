@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using EcoPulse.Api.Data;
 using EcoPulse.Api.Models;
+using EcoPulse.Api.DTOs; // Se asume que los DTOs están aquí
+using EcoPulse.Api.Services; // Necesario para IRangoService
 
 namespace EcoPulse.Api.Controllers
 {
@@ -10,30 +12,17 @@ namespace EcoPulse.Api.Controllers
     public class EntregaController : ControllerBase
     {
         private readonly MyDbContext _context;
+        private readonly IRangoService _rangoService; // ⬅️ Inyección de IRangoService
 
-        public EntregaController(MyDbContext context)
+        // Constructor actualizado para inyección de dependencia
+        public EntregaController(MyDbContext context, IRangoService rangoService)
         {
             _context = context;
+            _rangoService = rangoService;
         }
 
-        public class EntregaCreateDTO
-        {
-            public int IdUsuario { get; set; }
-            public int IdMaterial { get; set; }
-            public int IdCentroAcopio { get; set; }
-            public double Cantidad { get; set; }
-        }
-
-        public class EntregaResponseDTO
-        {
-            public int IdEntrega { get; set; }
-            public int IdUsuario { get; set; }
-            public int IdMaterial { get; set; }
-            public int IdCentroAcopio { get; set; }
-            public double Cantidad { get; set; }
-            public DateTime FechaEntrega { get; set; }
-            public int PuntosGenerados { get; set; }
-        }
+        // Se eliminan las clases DTO anidadas (EntregaCreateDTO y EntregaResponseDTO)
+        // ya que se usan los DTOs importados.
 
         // ================================
         // GET: api/entrega
@@ -92,42 +81,53 @@ namespace EcoPulse.Api.Controllers
         // ================================
         // POST: api/entrega
         // ================================
-       [HttpPost]
-public async Task<ActionResult<EntregaConPuntosDTO>> CrearEntrega([FromBody] EntregaCreateDTO dto)
-{
-    var usuario = await _context.Usuarios.FindAsync(dto.IdUsuario);
-    if (usuario == null)
-        return BadRequest(new { message = "Usuario no encontrado." });
+        [HttpPost]
+        // Se cambia el tipo de retorno a EntregaConPuntosYRangoDTO
+        public async Task<ActionResult<EntregaConPuntosYRangoDTO>> CrearEntrega([FromBody] EntregaCreateDTO dto)
+        {
+            var usuario = await _context.Usuarios.FindAsync(dto.IdUsuario);
+            if (usuario == null)
+                return BadRequest(new { message = "Usuario no encontrado." });
 
-    var entrega = new Entrega
-    {
-        IdUsuario = dto.IdUsuario,
-        IdMaterial = dto.IdMaterial,
-        IdCentroAcopio = dto.IdCentroAcopio,
-        Cantidad = dto.Cantidad,
-        FechaEntrega = DateTime.Now,
-        PuntosGenerados = (int)(dto.Cantidad * 1)
-    };
+            var entrega = new Entrega
+            {
+                IdUsuario = dto.IdUsuario,
+                IdMaterial = dto.IdMaterial,
+                IdCentroAcopio = dto.IdCentroAcopio,
+                Cantidad = dto.Cantidad,
+                FechaEntrega = DateTime.Now,
+                PuntosGenerados = (int)(dto.Cantidad * 1) // Se mantiene el cálculo de puntos
+            };
 
-    _context.Entregas.Add(entrega);
+            _context.Entregas.Add(entrega);
 
-    // sumamos puntos
-    usuario.PuntosTotales += entrega.PuntosGenerados;
+            // Sumamos puntos
+            usuario.PuntosTotales += entrega.PuntosGenerados;
 
-    await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
-    var response = new EntregaConPuntosDTO
-    {
-        IdEntrega = entrega.IdEntrega,
-        IdUsuario = entrega.IdUsuario,
-        Cantidad = entrega.Cantidad,
-        FechaEntrega = entrega.FechaEntrega,
-        PuntosGenerados = entrega.PuntosGenerados,
-        PuntosTotalesUsuario = usuario.PuntosTotales
-    };
+            // ✅ Obtener información actualizada del rango
+            var rango = _rangoService.ObtenerRangoPorPuntos(usuario.PuntosTotales);
+            var progreso = _rangoService.ObtenerProgresoRango(usuario.PuntosTotales);
+            var estilo = _rangoService.ObtenerEstiloRango(rango);
 
-    return Ok(response);
-}
+            var response = new EntregaConPuntosYRangoDTO // ⬅️ Se usa el nuevo DTO
+            {
+                IdEntrega = entrega.IdEntrega,
+                IdUsuario = entrega.IdUsuario,
+                Cantidad = entrega.Cantidad,
+                FechaEntrega = entrega.FechaEntrega,
+                PuntosGenerados = entrega.PuntosGenerados,
+                PuntosTotalesUsuario = usuario.PuntosTotales,
+                RangoActual = rango,
+                ProgresoRango = progreso.progresoPorcentaje,
+                SiguienteRango = progreso.siguienteRango,
+                ColorRango = estilo.color,
+                IconoRango = estilo.icon
+            };
+
+            return Ok(response);
+        }
 
 
         // ================================
@@ -151,10 +151,14 @@ public async Task<ActionResult<EntregaConPuntosDTO>> CrearEntrega([FromBody] Ent
             if (!await _context.CentrosAcopio.AnyAsync(c => c.IdCentroAcopio == dto.IdCentroAcopio))
                 return BadRequest("Centro de acopio no válido.");
 
+            // **IMPORTANTE**: No se implementa la lógica de recalcular puntos y rangos
+            // en la edición, ya que esto podría ser complejo. Se mantiene solo la actualización
+            // de datos básicos para este ejemplo.
             entrega.IdUsuario = dto.IdUsuario;
             entrega.IdMaterial = dto.IdMaterial;
             entrega.IdCentroAcopio = dto.IdCentroAcopio;
             entrega.Cantidad = dto.Cantidad;
+            // No se actualizan PuntosGenerados ni PuntosTotalesUsuario para mantener la simplicidad.
 
             await _context.SaveChangesAsync();
 
@@ -164,34 +168,33 @@ public async Task<ActionResult<EntregaConPuntosDTO>> CrearEntrega([FromBody] Ent
         // ================================
         // DELETE: api/entrega/5
         // ================================
-   [HttpDelete("{id}")]
-public async Task<ActionResult> DeleteEntrega(int id)
-{
-    var entrega = await _context.Entregas
-        .Include(e => e.Usuario)
-        .FirstOrDefaultAsync(e => e.IdEntrega == id);
+        [HttpDelete("{id}")]
+        public async Task<ActionResult> DeleteEntrega(int id)
+        {
+            var entrega = await _context.Entregas
+                .Include(e => e.Usuario)
+                .FirstOrDefaultAsync(e => e.IdEntrega == id);
 
-    if (entrega == null)
-        return NotFound(new { mensaje = "Entrega no encontrada" });
+            if (entrega == null)
+                return NotFound(new { mensaje = "Entrega no encontrada" });
 
-    // 🔽 1. Restar puntos del usuario
-    if (entrega.Usuario != null)
-    {
-        entrega.Usuario.PuntosTotales -= entrega.PuntosGenerados;
+            // 🔽 1. Restar puntos del usuario
+            if (entrega.Usuario != null)
+            {
+                entrega.Usuario.PuntosTotales -= entrega.PuntosGenerados;
 
-        // Evitar valores negativos por si acaso
-        if (entrega.Usuario.PuntosTotales < 0)
-            entrega.Usuario.PuntosTotales = 0;
-    }
+                // Evitar valores negativos por si acaso
+                if (entrega.Usuario.PuntosTotales < 0)
+                    entrega.Usuario.PuntosTotales = 0;
+            }
 
-    // 🔽 2. Eliminar la entrega
-    _context.Entregas.Remove(entrega);
+            // 🔽 2. Eliminar la entrega
+            _context.Entregas.Remove(entrega);
 
-    // 🔽 3. Guardar todos los cambios
-    await _context.SaveChangesAsync();
+            // 🔽 3. Guardar todos los cambios
+            await _context.SaveChangesAsync();
 
-    return Ok(new { mensaje = "Entrega eliminada correctamente y puntos actualizados" });
-}
-
+            return Ok(new { mensaje = "Entrega eliminada correctamente y puntos actualizados" });
+        }
     }
 }

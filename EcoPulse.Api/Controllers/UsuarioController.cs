@@ -8,6 +8,7 @@ using System.Text;
 using EcoPulse.Api.Data;
 using EcoPulse.Api.Models;
 using EcoPulse.Api.DTOs;
+using EcoPulse.Api.Services;
 
 namespace EcoPulse.Controllers
 {
@@ -17,11 +18,13 @@ namespace EcoPulse.Controllers
     {
         private readonly MyDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly IRangoService _rangoService;
 
-        public UsuarioController(MyDbContext context, IConfiguration configuration)
+        public UsuarioController(MyDbContext context, IConfiguration configuration, IRangoService rangoService)
         {
             _context = context;
             _configuration = configuration;
+            _rangoService = rangoService;
         }
 
         // GET: api/Usuario
@@ -31,30 +34,39 @@ namespace EcoPulse.Controllers
             var usuarios = await _context.Usuarios
                 .Include(u => u.Entregas)
                 .Include(u => u.CentroAcopio)
-                .Select(u => new UsuarioResponseDto // ✅ USAR DTO EN LUGAR DE ENTIDAD
+                .Select(u => new UsuarioResponseDto
                 {
                     IdUsuario = u.IdUsuario,
                     Nombre = u.Nombre,
                     Email = u.Email,
                     Rol = u.Rol,
                     PuntosTotales = u.PuntosTotales,
-                    // ✅ EVITAR CICLOS: Solo datos necesarios del CentroAcopio
+                    Rango = _rangoService.ObtenerRangoPorPuntos(u.PuntosTotales),
                     CentroAcopio = u.CentroAcopio != null ? new CentroAcopioSimpleDto
                     {
                         IdCentroAcopio = u.CentroAcopio.IdCentroAcopio,
                         Nombre = u.CentroAcopio.Nombre,
-                        
-                      //  Direccion = u.CentroAcopio.Direccion,
-                        
                     } : null,
-                    // ✅ EVITAR CICLOS: Solo contar entregas o datos simples
                     TotalEntregas = u.Entregas.Count,
                     PuntosPromedioPorEntrega = u.Entregas.Any() ? 
                         u.Entregas.Average(e => e.PuntosGenerados) : 0
                 })
                 .ToListAsync();
 
-            return Ok(usuarios);
+            // ✅ Agregar información de progreso y estilos
+            var usuariosConProgreso = usuarios.Select(u => {
+                var progreso = _rangoService.ObtenerProgresoRango(u.PuntosTotales);
+                var estilo = _rangoService.ObtenerEstiloRango(u.Rango);
+                
+                u.ProgresoRango = progreso.progresoPorcentaje;
+                u.SiguienteRango = progreso.siguienteRango;
+                u.ColorRango = estilo.color;
+                u.IconoRango = estilo.icon;
+                
+                return u;
+            });
+
+            return Ok(usuariosConProgreso);
         }
 
         // GET: api/Usuario/5
@@ -65,21 +77,20 @@ namespace EcoPulse.Controllers
                 .Include(u => u.Entregas)
                 .Include(u => u.CentroAcopio)
                 .Where(u => u.IdUsuario == id)
-                .Select(u => new UsuarioDetailResponseDto // ✅ DTO DETALLADO
+                .Select(u => new UsuarioDetailResponseDto
                 {
                     IdUsuario = u.IdUsuario,
                     Nombre = u.Nombre,
                     Email = u.Email,
                     Rol = u.Rol,
                     PuntosTotales = u.PuntosTotales,
+                    Rango = _rangoService.ObtenerRangoPorPuntos(u.PuntosTotales),
                     CentroAcopio = u.CentroAcopio != null ? new CentroAcopioSimpleDto
                     {
                         IdCentroAcopio = u.CentroAcopio.IdCentroAcopio,
                         Nombre = u.CentroAcopio.Nombre,
-                    //    Direccion = u.CentroAcopio.Direccion,
                         Telefono = u.CentroAcopio.Telefono,
                         HorarioAtencion = u.CentroAcopio.HorarioAtencion,
-                        
                     } : null,
                     Entregas = u.Entregas.Select(e => new EntregaSimpleDto
                     {
@@ -94,7 +105,94 @@ namespace EcoPulse.Controllers
             if (usuario == null)
                 return NotFound(new { message = "Usuario no encontrado." });
 
+            // ✅ Agregar información de progreso
+            var progreso = _rangoService.ObtenerProgresoRango(usuario.PuntosTotales);
+            var estilo = _rangoService.ObtenerEstiloRango(usuario.Rango);
+            
+            usuario.ProgresoRango = progreso.progresoPorcentaje;
+            usuario.SiguienteRango = progreso.siguienteRango;
+            usuario.ColorRango = estilo.color;
+            usuario.IconoRango = estilo.icon;
+
             return Ok(usuario);
+        }
+
+        // POST: api/Usuario/login
+        [HttpPost("login")]
+        [AllowAnonymous]
+        public async Task<ActionResult<LoginResponseDto>> Login([FromBody] LoginDto loginDto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var usuario = await _context.Usuarios
+                .FirstOrDefaultAsync(u => u.Email == loginDto.Email);
+
+            if (usuario == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, usuario.Password))
+                return Unauthorized(new { message = "Credenciales inválidas" });
+
+            var token = GenerateJwtToken(usuario);
+
+            // ✅ Agregar información de rango al login
+            var rango = _rangoService.ObtenerRangoPorPuntos(usuario.PuntosTotales);
+            var progreso = _rangoService.ObtenerProgresoRango(usuario.PuntosTotales);
+            var estilo = _rangoService.ObtenerEstiloRango(rango);
+
+            return Ok(new LoginResponseDto
+            {
+                Token = token,
+                UsuarioResponse = new UsuarioResponseDto
+                {
+                    IdUsuario = usuario.IdUsuario,
+                    Nombre = usuario.Nombre,
+                    Email = usuario.Email,
+                    Rol = usuario.Rol,
+                    PuntosTotales = usuario.PuntosTotales,
+                    Rango = rango,
+                    ProgresoRango = progreso.progresoPorcentaje,
+                    SiguienteRango = progreso.siguienteRango,
+                    ColorRango = estilo.color,
+                    IconoRango = estilo.icon
+                }
+            });
+        }
+
+        // ✅ Nuevo endpoint para obtener información detallada del rango
+        [HttpGet("{id}/rango")]
+        public async Task<IActionResult> GetInfoRangoUsuario(int id)
+        {
+            var usuario = await _context.Usuarios.FindAsync(id);
+            if (usuario == null)
+                return NotFound(new { message = "Usuario no encontrado." });
+
+            var rango = _rangoService.ObtenerRangoPorPuntos(usuario.PuntosTotales);
+            var progreso = _rangoService.ObtenerProgresoRango(usuario.PuntosTotales);
+            var estilo = _rangoService.ObtenerEstiloRango(rango);
+
+            return Ok(new RangoInfoDto
+            {
+                RangoActual = rango,
+                PuntosActuales = usuario.PuntosTotales,
+                ProgresoPorcentaje = progreso.progresoPorcentaje,
+                SiguienteRango = progreso.siguienteRango,
+                Color = estilo.color,
+                Icono = estilo.icon,
+                PuntosParaSiguienteRango = progreso.siguienteRango != null ? 
+                    CalcularPuntosParaSiguienteRango(usuario.PuntosTotales, progreso.siguienteRango) : 0
+            });
+        }
+
+        private int CalcularPuntosParaSiguienteRango(int puntosActuales, string siguienteRango)
+        {
+            int puntosSiguienteRango = siguienteRango switch
+            {
+                "Bronce" => 100,
+                "Plata" => 500,
+                "Oro" => 1000,
+                _ => 0
+            };
+
+            return Math.Max(0, puntosSiguienteRango - puntosActuales);
         }
 
         // POST: api/Usuario
@@ -119,7 +217,11 @@ namespace EcoPulse.Controllers
             _context.Usuarios.Add(usuario);
             await _context.SaveChangesAsync();
 
-            // ✅ Retornar DTO en lugar de entidad
+            // ✅ Retornar DTO con información de rango
+            var rango = _rangoService.ObtenerRangoPorPuntos(usuario.PuntosTotales);
+            var progreso = _rangoService.ObtenerProgresoRango(usuario.PuntosTotales);
+            var estilo = _rangoService.ObtenerEstiloRango(rango);
+
             return CreatedAtAction(nameof(GetUsuario), new { id = usuario.IdUsuario }, 
                 new UsuarioResponseDto
                 {
@@ -127,16 +229,20 @@ namespace EcoPulse.Controllers
                     Nombre = usuario.Nombre,
                     Email = usuario.Email,
                     Rol = usuario.Rol,
-                    PuntosTotales = usuario.PuntosTotales
+                    PuntosTotales = usuario.PuntosTotales,
+                    Rango = rango,
+                    ProgresoRango = progreso.progresoPorcentaje,
+                    SiguienteRango = progreso.siguienteRango,
+                    ColorRango = estilo.color,
+                    IconoRango = estilo.icon
                 });
         }
 
-        // PUT
+        // PUT y DELETE permanecen igual...
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUsuario(int id, [FromBody] UsuarioUpdateDTO dto)
         {
             var usuario = await _context.Usuarios.FindAsync(id);
-
             if (usuario == null)
                 return NotFound(new { message = "Usuario no encontrado." });
 
@@ -149,7 +255,6 @@ namespace EcoPulse.Controllers
             return Ok(new { message = "Usuario actualizado correctamente." });
         }
 
-        // DELETE
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUsuario(int id)
         {
@@ -173,37 +278,6 @@ namespace EcoPulse.Controllers
             return Ok(new { message = "Usuario eliminado correctamente." });
         }
 
-        // POST: api/Usuario/login
-        [HttpPost("login")]
-        [AllowAnonymous]
-        public async Task<ActionResult<LoginResponseDto>> Login([FromBody] LoginDto loginDto)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            var usuario = await _context.Usuarios
-                .FirstOrDefaultAsync(u => u.Email == loginDto.Email);
-
-            if (usuario == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, usuario.Password))
-                return Unauthorized(new { message = "Credenciales inválidas" });
-
-            var token = GenerateJwtToken(usuario);
-
-            return Ok(new LoginResponseDto
-            {
-                Token = token,
-                UsuarioResponse = new UsuarioResponseDto
-                {
-                    IdUsuario = usuario.IdUsuario,
-                    Nombre = usuario.Nombre,
-                    Email = usuario.Email,
-                    Rol = usuario.Rol,
-                    PuntosTotales = usuario.PuntosTotales
-                }
-            });
-        }
-
-        // GENERAR TOKEN
         private string GenerateJwtToken(Usuario user)
         {
             var key = _configuration["Jwt:Key"]
@@ -217,6 +291,8 @@ namespace EcoPulse.Controllers
                 new Claim(JwtRegisteredClaimNames.Sub, user.IdUsuario.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
                 new Claim("rol", user.Rol),
+                new Claim("puntos", user.PuntosTotales.ToString()),
+                new Claim("rango", _rangoService.ObtenerRangoPorPuntos(user.PuntosTotales)),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
@@ -230,55 +306,5 @@ namespace EcoPulse.Controllers
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
-    }
-
-    // ✅ DTOs NECESARIOS PARA EVITAR CICLOS
-
-    public class UsuarioResponseDto
-    {
-        public int IdUsuario { get; set; }
-        public string Nombre { get; set; }
-        public string Email { get; set; }
-        public string Rol { get; set; }
-        public int PuntosTotales { get; set; }
-        public CentroAcopioSimpleDto CentroAcopio { get; set; }
-        public int TotalEntregas { get; set; }
-        public double PuntosPromedioPorEntrega { get; set; }
-    }
-
-    public class UsuarioDetailResponseDto
-    {
-        public int IdUsuario { get; set; }
-        public string Nombre { get; set; }
-        public string Email { get; set; }
-        public string Rol { get; set; }
-        public int PuntosTotales { get; set; }
-        public CentroAcopioSimpleDto CentroAcopio { get; set; }
-        public List<EntregaSimpleDto> Entregas { get; set; }
-    }
-
-    public class CentroAcopioSimpleDto
-    {
-        public int IdCentroAcopio { get; set; }
-        public string Nombre { get; set; }
-        public string Direccion { get; set; }
-        public string Telefono { get; set; }
-        public string HorarioAtencion { get; set; }
-        public string Ciudad { get; set; }
-        public string Estado { get; set; }
-    }
-
-    public class EntregaSimpleDto
-    {
-        public int IdEntrega { get; set; }
-        public double Cantidad { get; set; }
-        public DateTime FechaEntrega { get; set; }
-        public int PuntosGenerados { get; set; }
-    }
-
-    public class LoginResponseDto
-    {
-        public string Token { get; set; }
-        public UsuarioResponseDto UsuarioResponse { get; set; }
     }
 }
