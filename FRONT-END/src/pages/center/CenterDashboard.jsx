@@ -3,15 +3,14 @@ import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Leaf, Package, TrendingUp, LogOut } from 'lucide-react';
+import { Leaf, Package, TrendingUp, ArrowLeft } from 'lucide-react';
 
 const CenterDashboard = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  const handleBack = () => {
+    navigate('/user/dashboard');
   };
 
   return (
@@ -33,9 +32,9 @@ const CenterDashboard = () => {
                 <p className="text-gray-600">Panel de Centro de Acopio</p>
               </div>
             </div>
-            <Button variant="ghost" onClick={handleLogout} className="text-red-600 hover:text-red-700">
-              <LogOut className="w-5 h-5 mr-2" />
-              Salir
+            <Button variant="ghost" onClick={handleBack} className="text-green-600 hover:text-green-700">
+              <ArrowLeft className="w-5 h-5 mr-2" />
+              Volver al Dashboard
             </Button>
           </div>
 

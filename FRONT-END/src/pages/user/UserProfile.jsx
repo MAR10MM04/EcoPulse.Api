@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { ArrowLeft, LogOut, Share2, Copy, Recycle, Wind, TreePine } from 'lucide-react';
+import { ArrowLeft, LogOut, Share2, Copy, Recycle, Wind, TreePine, Building, Store } from 'lucide-react';
 import QRCode from 'qrcode.react';
 import { motion } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
@@ -23,6 +23,33 @@ const UserProfile = () => {
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const [phrase] = React.useState(motivationalPhrases[Math.floor(Math.random() * motivationalPhrases.length)]);
+  const [userEntities, setUserEntities] = useState({ hasCenter: false, hasCommerce: false });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkUserEntities = async () => {
+      if (!user?.id) return;
+      
+      try {
+        // Verificar si tiene centro de acopio
+        const centerResponse = await fetch(`/api/CentroAcopio/usuario/${user.id}`);
+        const hasCenter = centerResponse.ok;
+
+        // Verificar si tiene comercio
+        const commerceResponse = await fetch(`/api/Comercio/usuario/${user.id}`);
+        const hasCommerce = commerceResponse.ok;
+
+        setUserEntities({ hasCenter, hasCommerce });
+      } catch (error) {
+        console.error('Error verificando entidades del usuario:', error);
+        setUserEntities({ hasCenter: false, hasCommerce: false });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkUserEntities();
+  }, [user?.id]);
 
   const handleLogout = () => {
     logout();
@@ -69,6 +96,7 @@ const UserProfile = () => {
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6"
           >
+            {/* Tarjeta de Información del Usuario */}
             <Card className="shadow-xl">
               <CardContent className="p-6">
                 <div className="flex flex-col sm:flex-row items-center gap-6">
@@ -80,12 +108,15 @@ const UserProfile = () => {
                   <div className="text-center sm:text-left">
                     <h1 className="text-3xl font-bold text-gray-800">{user?.name}</h1>
                     <p className="text-gray-600">{user?.email}</p>
-                    <p className="text-sm text-gray-500 mt-1">Miembro desde {new Date(user?.createdAt).toLocaleDateString()}</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Miembro desde {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Fecha no disponible'}
+                    </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
+            {/* Tarjeta de ID de Reciclador */}
             <Card className="shadow-xl">
               <CardHeader>
                 <CardTitle>Mi ID de Reciclador</CardTitle>
@@ -97,7 +128,7 @@ const UserProfile = () => {
                 <div className="flex-grow text-center sm:text-left">
                   <p className="text-sm text-gray-600 mb-2">Usa este QR en los centros de acopio</p>
                   <div className="bg-gray-100 rounded-lg p-3 flex items-center justify-between">
-                    <span className="font-mono text-gray-700 text-sm truncate">{user?.id}</span>
+                    <span className="font-mono text-gray-700 text-sm truncate">{user?.id || 'ID no disponible'}</span>
                     <Button variant="ghost" size="icon" onClick={() => copyToClipboard(user?.id)}>
                       <Copy className="w-4 h-4" />
                     </Button>
@@ -106,35 +137,76 @@ const UserProfile = () => {
               </CardContent>
             </Card>
 
+            {/* Tarjeta de Impacto Ecológico */}
             <Card className="shadow-xl">
               <CardHeader>
                 <CardTitle>Mi Impacto Ecológico</CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <Recycle className="w-8 h-8 mx-auto text-green-600 mb-2" />
-                    <p className="text-2xl font-bold text-green-700">{kgReciclados} kg</p>
-                    <p className="text-sm text-gray-600">Reciclados</p>
-                  </div>
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <Wind className="w-8 h-8 mx-auto text-blue-600 mb-2" />
-                    <p className="text-2xl font-bold text-blue-700">{co2Ahorrado} kg</p>
-                    <p className="text-sm text-gray-600">CO₂ Ahorrado</p>
-                  </div>
-                  <div className="bg-emerald-50 p-4 rounded-lg">
-                    <TreePine className="w-8 h-8 mx-auto text-emerald-600 mb-2" />
-                    <p className="text-2xl font-bold text-emerald-700">{arbolesEquiv}</p>
-                    <p className="text-sm text-gray-600">Árboles Equiv.</p>
-                  </div>
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <Recycle className="w-8 h-8 mx-auto text-green-600 mb-2" />
+                  <p className="text-2xl font-bold text-green-700">{kgReciclados} kg</p>
+                  <p className="text-sm text-gray-600">Reciclados</p>
+                </div>
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <Wind className="w-8 h-8 mx-auto text-blue-600 mb-2" />
+                  <p className="text-2xl font-bold text-blue-700">{co2Ahorrado} kg</p>
+                  <p className="text-sm text-gray-600">CO₂ Ahorrado</p>
+                </div>
+                <div className="bg-emerald-50 p-4 rounded-lg">
+                  <TreePine className="w-8 h-8 mx-auto text-emerald-600 mb-2" />
+                  <p className="text-2xl font-bold text-emerald-700">{arbolesEquiv}</p>
+                  <p className="text-sm text-gray-600">Árboles Equiv.</p>
+                </div>
               </CardContent>
             </Card>
 
+            {/* Panel de Administración - SOLO si el usuario tiene entidades */}
+            {!loading && (userEntities.hasCenter || userEntities.hasCommerce) && (
+              <Card className="shadow-xl">
+                <CardHeader>
+                  <CardTitle>Mis Puntos de Gestión</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {userEntities.hasCenter && (
+                      <Button 
+                        onClick={() => navigate('/center/dashboard')}
+                        className="h-24 flex flex-col gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white transition-all duration-300 transform hover:scale-105"
+                      >
+                        <Building className="w-8 h-8" />
+                        <span className="font-semibold">Administrar Centro de Reciclaje</span>
+                      </Button>
+                    )}
+                    {userEntities.hasCommerce && (
+                      <Button 
+                        onClick={() => navigate('/commerce/dashboard')}
+                        className="h-24 flex flex-col gap-2 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white transition-all duration-300 transform hover:scale-105"
+                      >
+                        <Store className="w-8 h-8" />
+                        <span className="font-semibold">Administrar EcoMerts</span>
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Frase Motivacional */}
             <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-6 rounded-xl shadow-lg text-center">
               <p className="font-semibold italic">"{phrase}"</p>
             </div>
             
+            {/* Botones de Acción */}
             <div className="flex gap-4">
-              <Button onClick={() => toast({ description: "🚧 Esta función no está implementada aún—¡pero puedes solicitarla en tu próximo prompt! 🚀" })} variant="outline" className="w-full">
+              <Button 
+                onClick={() => toast({ 
+                  title: "Función en desarrollo",
+                  description: "🚧 La función de compartir perfil estará disponible pronto 🚀" 
+                })} 
+                variant="outline" 
+                className="w-full"
+              >
                 <Share2 className="w-4 h-4 mr-2" />
                 Compartir mi Perfil
               </Button>

@@ -81,7 +81,8 @@ function App() {
         <Route path="/" element={<WelcomePage />} />
         <Route path="/login" element={<AuthRoute><LoginPage /></AuthRoute>} />
         <Route path="/register" element={<AuthRoute><RegisterPage /></AuthRoute>} />
-
+<Route path="/center/dashboard" element={<CenterDashboard />} />
+<Route path="/commerce/dashboard" element={<CommerceDashboard />} />
         {/* Nueva ruta para registrar centro */}
 
 

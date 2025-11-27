@@ -1,16 +1,15 @@
-
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Leaf, LogOut, PlusCircle, QrCode, History, Award, Gift, Loader2 } from 'lucide-react';
+import { Leaf, ArrowLeft, PlusCircle, QrCode, History, Award, Gift, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const CommerceDashboard = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [rewards, setRewards] = useState([]);
   const [redemptions, setRedemptions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,9 +27,8 @@ const CommerceDashboard = () => {
     }
   }, [user]);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  const handleBack = () => {
+    navigate('/user/dashboard');
   };
 
   if (loading) {
@@ -61,9 +59,9 @@ const CommerceDashboard = () => {
                 <p className="text-gray-600">Panel de Comercio Local</p>
               </div>
             </div>
-            <Button variant="ghost" onClick={handleLogout} className="text-red-600 hover:text-red-700">
-              <LogOut className="w-5 h-5 mr-2" />
-              Salir
+            <Button variant="ghost" onClick={handleBack} className="text-green-600 hover:text-green-700">
+              <ArrowLeft className="w-5 h-5 mr-2" />
+              Volver al Dashboard
             </Button>
           </header>
 
