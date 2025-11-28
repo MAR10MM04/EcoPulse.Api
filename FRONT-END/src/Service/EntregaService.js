@@ -38,19 +38,21 @@ const fetchWithAuth = async (url, options = {}) => {
    🔄 TRANSFORMADORES
 ----------------------------------------- */
 
-// Lista de entregas (GET ALL)
+// Lista de entregas (GET ALL y GET BY USER)
 const transformEntregaList = (e) => ({
     IdEntrega: e.idEntrega,
     Cantidad: e.cantidad,
     FechaEntrega: e.fechaEntrega,
-    PuntosGenerados: e.puntosGenerados,
+    // Aseguramos capturar puntosGenerados
+    PuntosGenerados: e.puntosGenerados || 0, 
 
+    // Estos son los objetos (ej: { idMaterial: 1, nombre: "Plástico" })
     Usuario: e.usuario,
     Material: e.material,
     CentroAcopio: e.centroAcopio,
 });
 
-// Obtención de entrega por ID
+// Obtención de entrega por ID (Detalle)
 const transformEntregaDetail = (e) => ({
     IdEntrega: e.idEntrega,
     Cantidad: e.cantidad,
@@ -87,6 +89,13 @@ const transformEntregaRango = (e) => ({
 // GET: entregas
 export const getEntregas = async () => {
     const data = await fetchWithAuth(API_URL);
+    return data.map(transformEntregaList);
+};
+
+// 🔑 NUEVO ENDPOINT: GET: Entregas por ID de Usuario
+export const getEntregasByUserId = async (idUsuario) => {
+    // Llama al endpoint: api/Entrega/usuario/{id}
+    const data = await fetchWithAuth(`${API_URL}/usuario/${idUsuario}`);
     return data.map(transformEntregaList);
 };
 
@@ -131,7 +140,7 @@ export const updateEntrega = async (id, entregaData) => {
     return true;
 };
 
-// DELETE: eliminar entrega (puntos se ajustan automáticamente)
+// DELETE: eliminar entrega
 export const deleteEntrega = async (id) => {
     await fetchWithAuth(`${API_URL}/${id}`, {
         method: "DELETE",

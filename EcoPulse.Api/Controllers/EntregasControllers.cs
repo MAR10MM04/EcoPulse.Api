@@ -27,6 +27,8 @@ namespace EcoPulse.Api.Controllers
         // ================================
         // GET: api/entrega
         // ================================
+
+
         [HttpGet]
         public async Task<ActionResult<IEnumerable<object>>> GetEntregas()
         {
@@ -49,6 +51,51 @@ namespace EcoPulse.Api.Controllers
             return Ok(entregas);
         }
 
+// ================================
+// GET: api/entrega/usuario/{idUsuario}
+// ================================
+[HttpGet("usuario/{idUsuario}")]
+public async Task<ActionResult<IEnumerable<object>>> GetEntregasPorUsuario(int idUsuario)
+{
+    // 1. Verificar si el usuario existe
+    var usuarioExiste = await _context.Usuarios.AnyAsync(u => u.IdUsuario == idUsuario);
+    if (!usuarioExiste)
+    {
+        return NotFound(new { message = $"Usuario con ID {idUsuario} no encontrado." });
+    }
+
+    // 2. Obtener entregas con los Nombres de Material y Centro dentro de objetos
+    var entregas = await _context.Entregas
+        .Include(e => e.Usuario)
+        .Include(e => e.Material)
+        .Include(e => e.CentroAcopio)
+        .Where(e => e.IdUsuario == idUsuario)
+        .Select(e => new
+        {
+            e.IdEntrega,
+            e.Cantidad,
+            e.FechaEntrega,
+            e.PuntosGenerados,
+            
+            // ✅ CORRECCIÓN: Devolvemos objetos completos para que el frontend
+            // pueda acceder a .Nombre (ej: delivery.Material.Nombre)
+            Material = new 
+            { 
+                e.Material.IdMaterial, 
+                e.Material.Nombre 
+            },
+            
+            CentroAcopio = new 
+            { 
+                e.CentroAcopio.IdCentroAcopio, 
+                e.CentroAcopio.Nombre 
+            }
+        })
+        .OrderByDescending(e => e.FechaEntrega)
+        .ToListAsync();
+
+    return Ok(entregas);
+}
         // ================================
         // GET: api/entrega/5
         // ================================
