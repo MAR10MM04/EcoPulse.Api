@@ -6,8 +6,7 @@ import { ArrowLeft, Package } from 'lucide-react';
 
 // 👇 importa tu servicio EXISTENTE
 import { getEntregas } from '@/Service/EntregaService'; 
-// si tu carpeta es "services" en vez de "Service", usa:
-// import { getEntregas } from '@/services/EntregaService';
+
 
 const CenterHistory = () => {
   const navigate = useNavigate();
