@@ -1,4 +1,4 @@
-// src/services/CentroAcopioService.js
+// src/Service/CentroServices.js
 
 const API_URL = "http://localhost:5153/api/CentroAcopio";
 
@@ -42,10 +42,26 @@ const fetchWithAuth = async (url, options = {}) => {
 
 
 //
-// 🔄 TRANSFORMADOR (Backend → Frontend)
+// 🗺️ MAPEO NOMBRE CENTRO → ID (por si backend solo regresa nombre)
+//
+const mapCentroNombreToId = (nombre) => {
+    const mapa = {
+        "Centro San Martin": 1,
+        "Centro Acalan": 2,
+        "Centro Palenque": 3,
+        "Centro Reforma": 4,
+        "Centro El Parque": 5
+    };
+
+    return mapa[nombre] || null;
+};
+
+
+//
+// 🔄 TRANSFORMADOR
 //
 const transformCentro = (c) => ({
-    IdCentroAcopio: c.idCentroAcopio,
+    IdCentroAcopio: c.idCentroAcopio || mapCentroNombreToId(c.nombre),
     Nombre: c.nombre,
     Latitud: c.latitud,
     Longitud: c.longitud,
@@ -53,6 +69,7 @@ const transformCentro = (c) => ({
     HorarioAtencion: c.horarioAtencion,
     IdUsuario: c.idUsuario
 });
+
 
 //
 // 📌 GET: Todos los centros
@@ -62,6 +79,7 @@ export const getCentros = async () => {
     return data.map(transformCentro);
 };
 
+
 //
 // 📌 GET: Centro por ID
 //
@@ -70,20 +88,15 @@ export const getCentroById = async (id) => {
     return transformCentro(data);
 };
 
+
 //
 // 📌 GET: Centro por Usuario
 //
 export const getCentroByUsuario = async (idUsuario) => {
     const data = await fetchWithAuth(`${API_URL}/usuario/${idUsuario}`);
-    return {
-        Nombre: data.nombre,
-        Latitud: data.latitud,
-        Longitud: data.longitud,
-        Telefono: data.telefono,
-        HorarioAtencion: data.horarioAtencion,
-        IdUsuario: data.idUsuario
-    };
+    return transformCentro(data);
 };
+
 
 //
 // 📌 POST: Crear centro
@@ -104,6 +117,7 @@ export const createCentro = async (centroData) => {
     });
 };
 
+
 //
 // 📌 PUT: Actualizar centro
 //
@@ -123,6 +137,7 @@ export const updateCentro = async (id, centroData) => {
 
     return true;
 };
+
 
 //
 // 📌 DELETE: Eliminar centro

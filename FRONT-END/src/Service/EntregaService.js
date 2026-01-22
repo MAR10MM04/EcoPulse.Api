@@ -1,4 +1,4 @@
-// src/services/EntregaService.js
+// src/Service/EntregaService.js
 
 const API_URL = "http://localhost:5153/api/Entrega";
 
@@ -35,6 +35,21 @@ const fetchWithAuth = async (url, options = {}) => {
 };
 
 /* -----------------------------------------
+   🗺️ MAPEO NOMBRE CENTRO → ID (TEMPORAL)
+----------------------------------------- */
+const mapCentroNombreToId = (nombre) => {
+    const mapa = {
+        "Centro San Martin": 1,
+        "Centro Acalan": 2,
+        "Centro Palenque": 3,
+        "Centro Reforma": 4,
+        "Centro El Parque": 5
+    };
+
+    return mapa[nombre] || null;
+};
+
+/* -----------------------------------------
    🔄 TRANSFORMADORES
 ----------------------------------------- */
 
@@ -43,16 +58,18 @@ const transformEntregaList = (e) => ({
     IdEntrega: e.idEntrega,
     Cantidad: e.cantidad,
     FechaEntrega: e.fechaEntrega,
-    // Aseguramos capturar puntosGenerados
-    PuntosGenerados: e.puntosGenerados || 0, 
+    PuntosGenerados: e.puntosGenerados || 0,
 
-    // Estos son los objetos (ej: { idMaterial: 1, nombre: "Plástico" })
     Usuario: e.usuario,
     Material: e.material,
     CentroAcopio: e.centroAcopio,
+
+    // 🔥 Añadidos para que el Dashboard pueda filtrar
+    IdCentroAcopio: mapCentroNombreToId(e.centroAcopio),
+    IdUsuario: e.usuario
 });
 
-// Obtención de entrega por ID (Detalle)
+// Detalle entrega
 const transformEntregaDetail = (e) => ({
     IdEntrega: e.idEntrega,
     Cantidad: e.cantidad,
@@ -64,7 +81,7 @@ const transformEntregaDetail = (e) => ({
     CentroAcopio: e.centroAcopio,
 });
 
-// Respuesta especial del POST con rango + puntos
+// Respuesta POST con datos extendidos
 const transformEntregaRango = (e) => ({
     IdEntrega: e.idEntrega,
     IdUsuario: e.idUsuario,
@@ -73,8 +90,6 @@ const transformEntregaRango = (e) => ({
     PuntosGenerados: e.puntosGenerados,
 
     PuntosTotalesUsuario: e.puntosTotalesUsuario,
-
-    // 🔥 Rango actual del usuario después de la entrega
     RangoActual: e.rangoActual,
     ProgresoRango: e.progresoRango,
     SiguienteRango: e.siguienteRango,
@@ -86,15 +101,14 @@ const transformEntregaRango = (e) => ({
    📌 ENDPOINTS
 ----------------------------------------- */
 
-// GET: entregas
+// GET: todas las entregas
 export const getEntregas = async () => {
     const data = await fetchWithAuth(API_URL);
     return data.map(transformEntregaList);
 };
 
-// 🔑 NUEVO ENDPOINT: GET: Entregas por ID de Usuario
+// GET: entregas de un usuario
 export const getEntregasByUserId = async (idUsuario) => {
-    // Llama al endpoint: api/Entrega/usuario/{id}
     const data = await fetchWithAuth(`${API_URL}/usuario/${idUsuario}`);
     return data.map(transformEntregaList);
 };
@@ -105,7 +119,7 @@ export const getEntregaById = async (id) => {
     return transformEntregaDetail(data);
 };
 
-// POST: crear entrega (regresa puntos + rango)
+// POST: crear entrega
 export const createEntrega = async (entregaData) => {
     const body = {
         IdUsuario: entregaData.IdUsuario,
@@ -119,7 +133,6 @@ export const createEntrega = async (entregaData) => {
         body: JSON.stringify(body),
     });
 
-    // 🔥 Transformamos para entregar rango + puntos
     return transformEntregaRango(data);
 };
 
