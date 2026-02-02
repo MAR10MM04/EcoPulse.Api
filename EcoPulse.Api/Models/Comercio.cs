@@ -10,11 +10,13 @@ namespace EcoPulse.Api.Models
     {
         [Key]
   public int IdComercio { get; set; }
-        public string Nombre { get; set; }
-        public string Direccion { get; set; }
+        public required string Nombre { get; set; }
+        public required string Direccion { get; set; }
        
-        public string Estado { get; set; }
+        public required string Estado { get; set; }
         public int IdUsuario { get; set; }
 
+   public virtual ICollection<Recompensa>? Recompensas { get; set; }
+   public virtual Usuario? Usuario { get; set; }
     }
 }

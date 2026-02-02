@@ -18,92 +18,205 @@ namespace EcoPulse.Api.Controllers
         }
 
         // GET: api/Recompensa/comercio/5  (productos de un comercio)
-        [HttpGet("comercio/{idComercio}")]
-        public async Task<IActionResult> GetByComercio(int idComercio)
+ [HttpGet("comercio/{idComercio}")]
+public async Task<IActionResult> GetByComercio(int idComercio)
+{
+    var recompensas = await _context.Recompensas
+        .Include(r => r.Comercio)
+        .Where(r => r.IdComercio == idComercio && r.Activo)
+        .Select(r => new RecompensaResponseDTO
         {
-            var recompensas = await _context.Recompensas
-                .Where(r => r.IdComercio == idComercio)
-                .Select(r => new RecompensaResponseDTO
-                {
-                    IdRecompensa = r.IdRecompensa,
-                    Nombre = r.Nombre,
-                    CostoPuntos = r.CostoPuntos,
-                    Descripcion = r.Descripcion,
-                    IdComercio = r.IdComercio
-                })
-                .ToListAsync();
+            IdRecompensa = r.IdRecompensa,
+            Nombre = r.Nombre,
+            CostoPuntos = r.CostoPuntos,
+            Descripcion = r.Descripcion,
+            UrlFoto = r.UrlFoto,
+            Stock = r.Stock,
+            FechaCreacion = r.FechaCreacion,
+            IdComercio = r.IdComercio,
+            NombreComercio = r.Comercio!.Nombre
+        })
+        .ToListAsync();
 
-            return Ok(recompensas);
-        }
+    return Ok(recompensas);
+}
 
-        // POST: api/Recompensa  (agregar producto)
-        [HttpPost]
-        public async Task<IActionResult> CreateRecompensa([FromBody] RecompensaCreateDTO dto)
+       
+// POST: api/Recompensa/form
+[HttpPost("form")]
+public async Task<IActionResult> CreateRecompensaConImagen(
+    [FromForm] RecompensaCreateFormDTO dto)
+{
+    if (!ModelState.IsValid)
+        return BadRequest(ModelState);
+
+    var comercio = await _context.Comercios.FindAsync(dto.IdComercio);
+    if (comercio == null)
+        return BadRequest(new { message = "El comercio no existe." });
+
+    string? urlImagen = null;
+
+    if (dto.Imagen != null && dto.Imagen.Length > 0)
+    {
+        var uploadsFolder = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "wwwroot/recompensas");
+
+        if (!Directory.Exists(uploadsFolder))
+            Directory.CreateDirectory(uploadsFolder);
+
+        var fileName = $"{Guid.NewGuid()}{Path.GetExtension(dto.Imagen.FileName)}";
+        var filePath = Path.Combine(uploadsFolder, fileName);
+
+        using var stream = new FileStream(filePath, FileMode.Create);
+        await dto.Imagen.CopyToAsync(stream);
+
+        urlImagen = $"/recompensas/{fileName}";
+    }
+
+    var recompensa = new Recompensa
+    {
+        Nombre = dto.Nombre,
+        CostoPuntos = dto.CostoPuntos,
+        Descripcion = dto.Descripcion,
+        Stock = dto.Stock,
+        UrlFoto = urlImagen,
+        IdComercio = dto.IdComercio,
+        Activo = true
+    };
+
+    _context.Recompensas.Add(recompensa);
+    await _context.SaveChangesAsync();
+
+    return Ok(new
+    {
+        message = "Recompensa creada correctamente.",
+        recompensa.IdRecompensa,
+        recompensa.UrlFoto
+    });
+}
+
+
+
+// GET: api/Recompensa/public
+[HttpGet("public")]
+public async Task<IActionResult> GetRecompensasPublicas()
+{
+    var recompensas = await _context.Recompensas
+        .Include(r => r.Comercio)
+       
+        .Select(r => new RecompensaResponseDTO
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            IdRecompensa = r.IdRecompensa,
+            Nombre = r.Nombre,
+            Descripcion = r.Descripcion,
+            CostoPuntos = r.CostoPuntos,
+            UrlFoto = r.UrlFoto,
+            Stock = r.Stock,
+            IdComercio = r.IdComercio,
+            NombreComercio = r.Comercio!.Nombre
+        })
+        .ToListAsync();
 
-            var comercio = await _context.Comercios.FindAsync(dto.IdComercio);
-            if (comercio == null)
-                return BadRequest(new { message = "El comercio asociado no existe." });
+    return Ok(recompensas);
+}
 
-            var recompensa = new Recompensa
-            {
-                Nombre = dto.Nombre,
-                CostoPuntos = dto.CostoPuntos,
-                Descripcion = dto.Descripcion,
-                IdComercio = dto.IdComercio
-            };
 
-            _context.Recompensas.Add(recompensa);
-            await _context.SaveChangesAsync();
+       // POST: api/Recompensa/canjear
+[HttpPost("canjear")]
+public async Task<IActionResult> CanjearRecompensa([FromBody] CanjeRecompensaDTO dto)
+{
+    using var transaction = await _context.Database.BeginTransactionAsync();
 
-            var response = new RecompensaResponseDTO
-            {
-                IdRecompensa = recompensa.IdRecompensa,
-                Nombre = recompensa.Nombre,
-                CostoPuntos = recompensa.CostoPuntos,
-                Descripcion = recompensa.Descripcion,
-                IdComercio = recompensa.IdComercio
-            };
+    try
+    {
+        var usuario = await _context.Usuarios.FindAsync(dto.IdUsuario);
+        if (usuario == null)
+            return NotFound(new { message = "Usuario no encontrado." });
 
-            return Ok(response);
-        }
+        var recompensa = await _context.Recompensas.FindAsync(dto.IdRecompensa);
+        if (recompensa == null || !recompensa.Activo)
+            return BadRequest(new { message = "Recompensa no disponible." });
 
-        // PUT: api/Recompensa/5
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateRecompensa(int id, [FromBody] RecompensaUpdateDTO dto)
+        if (recompensa.Stock <= 0)
+            return BadRequest(new { message = "Recompensa sin stock." });
+
+        if (usuario.PuntosTotales < recompensa.CostoPuntos)
+            return BadRequest(new { message = "Puntos insuficientes." });
+
+        // 🔻 Descuentos
+        usuario.PuntosTotales -= recompensa.CostoPuntos;
+        recompensa.Stock -= 1;
+
+        await _context.SaveChangesAsync();
+        await transaction.CommitAsync();
+
+        return Ok(new
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            message = "Recompensa canjeada correctamente.",
+            puntosRestantes = usuario.PuntosTotales
+        });
+    }
+    catch
+    {
+        await transaction.RollbackAsync();
+        return StatusCode(500, "Error al procesar el canje.");
+    }
+}
 
-            var recompensa = await _context.Recompensas.FindAsync(id);
-            if (recompensa == null)
-                return NotFound(new { message = "Recompensa no encontrada." });
 
-            recompensa.Nombre = dto.Nombre;
-            recompensa.CostoPuntos = dto.CostoPuntos;
-            recompensa.Descripcion = dto.Descripcion;
+       // PUT: api/Recompensa/{id}
+[HttpPut("{id}")]
+public async Task<IActionResult> UpdateRecompensa(
+    int id,
+    [FromForm] RecompensaUpdateFormDTO dto)
+{
+    var recompensa = await _context.Recompensas.FindAsync(id);
+    if (recompensa == null)
+        return NotFound(new { message = "Recompensa no encontrada." });
 
-            await _context.SaveChangesAsync();
+    recompensa.Nombre = dto.Nombre;
+    recompensa.CostoPuntos = dto.CostoPuntos;
+    recompensa.Descripcion = dto.Descripcion;
+    recompensa.Stock = dto.Stock;
 
-            return Ok(new { message = "Recompensa actualizada correctamente." });
-        }
+    // 📸 Si viene nueva imagen, se reemplaza
+    if (dto.Imagen != null && dto.Imagen.Length > 0)
+    {
+        var uploadsFolder = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "wwwroot/recompensas");
 
-        // DELETE: api/Recompensa/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteRecompensa(int id)
-        {
-            var recompensa = await _context.Recompensas.FindAsync(id);
-            if (recompensa == null)
-                return NotFound(new { message = "Recompensa no encontrada." });
+        if (!Directory.Exists(uploadsFolder))
+            Directory.CreateDirectory(uploadsFolder);
 
-            // Aquí más adelante puedes validar si hay canjes asociados
+        var fileName = $"{Guid.NewGuid()}{Path.GetExtension(dto.Imagen.FileName)}";
+        var filePath = Path.Combine(uploadsFolder, fileName);
 
-            _context.Recompensas.Remove(recompensa);
-            await _context.SaveChangesAsync();
+        using var stream = new FileStream(filePath, FileMode.Create);
+        await dto.Imagen.CopyToAsync(stream);
 
-            return Ok(new { message = "Recompensa eliminada correctamente." });
-        }
+        recompensa.UrlFoto = $"/recompensas/{fileName}";
+    }
+
+    await _context.SaveChangesAsync();
+
+    return Ok(new { message = "Recompensa actualizada correctamente." });
+}
+
+
+     // DELETE: api/Recompensa/{id}
+[HttpDelete("{id}")]
+public async Task<IActionResult> DeleteRecompensa(int id)
+{
+    var recompensa = await _context.Recompensas.FindAsync(id);
+    if (recompensa == null)
+        return NotFound(new { message = "Recompensa no encontrada." });
+
+    _context.Recompensas.Remove(recompensa);
+    await _context.SaveChangesAsync();
+
+    return Ok(new { message = "Recompensa eliminada definitivamente." });
+}
     }
 }

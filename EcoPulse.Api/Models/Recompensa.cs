@@ -10,9 +10,15 @@ namespace EcoPulse.Api.Models
     {
         [Key]
         public int IdRecompensa { get; set; }
-        public string Nombre { get; set; }
+        public required string Nombre { get; set; }
         public int CostoPuntos { get; set; }
-        public string Descripcion { get; set; }
+        public required string Descripcion { get; set; }
+         public string? UrlFoto { get; set; }
          public int IdComercio { get; set; }
+        public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
+        public bool Activo { get; set; } = true;
+        public int Stock { get; set; } = 0;
+        public virtual Comercio? Comercio { get; set; }
     }
+
 }

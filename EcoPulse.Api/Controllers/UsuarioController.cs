@@ -211,7 +211,9 @@ namespace EcoPulse.Controllers
                 Email = usuarioDto.Email,
                 Password = BCrypt.Net.BCrypt.HashPassword(usuarioDto.Password),
                 Rol = "Usuario",
-                PuntosTotales = 0
+                PuntosTotales = 0,
+                Entregas = new List<Entrega>(),
+                CentroAcopio = null
             };
 
             _context.Usuarios.Add(usuario);
