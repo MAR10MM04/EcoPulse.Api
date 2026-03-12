@@ -2,202 +2,227 @@ import React from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-// ⚠ REVISA Y AJUSTA ESTA RUTA SI ES NECESARIO
-import { useAuth } from '../../hooks/useAuth'; 
-// IMPORTACIONES DE UI AJUSTADAS A RELATIVAS
+import { useAuth } from '../../hooks/useAuth';
 import { Button } from '../../components/ui/button';
 import { Avatar, AvatarFallback } from '../../components/ui/avatar';
-// Asegúrate de que 'lucide-react', 'framer-motion' y 'react-helmet' estén instalados
-import { Leaf, MapPin, Package, Award, TrendingUp, Calendar, Box, Landmark } from 'lucide-react'; 
+import {
+  Leaf, MapPin, Package, Award, TrendingUp,
+  Target, ChevronRight, Store, Zap
+} from 'lucide-react';
 
-// 🔑 NUEVA IMPORTACIÓN: Se importa el componente de tabla real
-import LatestDeliveriesTable from './LatestDeliveriesTable'; 
+import LatestDeliveriesTable from './LatestDeliveriesTable';
 
-// 1. COMPONENTE DE TABLA SIMULADO (ELIMINADO / COMENTADO)
-/*
-const LatestDeliveriesTable = ({ navigate }) => {
+// --- Mini Componente: Gráfica de tendencia simple (SVG) ---
+const Sparkline = () => (
+  <svg className="w-24 h-10 text-emerald-500 opacity-60" viewBox="0 0 100 40">
+    <path
+      d="M0 35 Q 20 10, 40 25 T 80 5 T 100 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
+// --- Mini Componente: Progreso Circular ---
+const CircularProgress = ({ progress, rank }) => {
+  const radius = 35;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (progress / 100) * circumference;
+
   return (
-    <div className="flex flex-col items-center justify-center p-12 bg-gray-50 rounded-lg h-full border border-dashed border-gray-300">
-      <Package className="w-12 h-12 text-gray-400 mb-3" />
-      <p className="text-gray-600 mb-4">Aún no has registrado entregas</p>
-      <button
-        onClick={() => navigate('/user/register-delivery')}
-        className="bg-green-600 text-white px-4 py-2 rounded-full font-medium hover:bg-green-700 transition-colors"
-      >
-        Registrar primera entrega
-      </button>
+    <div className="relative flex items-center justify-center w-24 h-24">
+      <svg className="w-full h-full transform -rotate-90">
+        <circle
+          cx="48" cy="48" r={radius}
+          stroke="currentColor"
+          strokeWidth="6"
+          fill="transparent"
+          className="text-white/20"
+        />
+        <circle
+          cx="48" cy="48" r={radius}
+          stroke="currentColor"
+          strokeWidth="6"
+          fill="transparent"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          className="text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]"
+        />
+      </svg>
+      <span className="absolute text-xs font-bold text-white uppercase tracking-tighter">
+        {rank}
+      </span>
     </div>
   );
 };
-*/
 
 const UserDashboard = () => {
   const navigate = useNavigate();
-  // Se asume que useAuth devuelve un objeto con user y user?.name
-  const { user } = useAuth() || {}; // Añadido || {} para mayor seguridad en caso de que useAuth devuelva undefined
+  const { user } = useAuth() || {};
 
- 
-  // Funciones auxiliares
   const getRankColor = (rank) => {
     switch (rank) {
-      case 'Oro': return 'from-yellow-400 to-yellow-600';
-      case 'Plata': return 'from-gray-300 to-gray-500';
-      default: return 'from-orange-400 to-orange-600';
+      case 'Oro': return 'from-yellow-400 to-amber-600';
+      case 'Plata': return 'from-slate-300 to-slate-500';
+      default: return 'from-orange-500 to-red-600';
     }
   };
 
   const getInitials = (name) => {
     if (!name) return 'U';
-    const nameString = String(name);
-    return nameString.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    return String(name).split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   };
-  
+
   return (
     <>
       <Helmet>
         <title>Mi Dashboard - Eco-Pulse</title>
-        <meta name="description" content="Gestiona tus puntos, entregas y recompensas en Eco-Pulse." />
       </Helmet>
 
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-white p-4 md:p-8">
+      <div className="min-h-screen bg-[#f0f9f4] p-4 md:p-8 text-slate-800">
         <div className="max-w-6xl mx-auto">
-          
-          {/* Cabecera del Dashboard (Fila 0) */}
-          <div className="flex justify-between items-center mb-8">
-            <div className="flex items-center gap-3">
-              <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-3 rounded-full">
-                <Leaf className="w-8 h-8 text-white" />
+
+          {/* Cabecera */}
+          <header className="flex justify-between items-center mb-10">
+            <div className="flex items-center gap-4">
+              <div className="bg-white p-3 rounded-2xl shadow-sm border border-emerald-100">
+                <Leaf className="w-8 h-8 text-emerald-500" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-800">Hola, {user?.name || 'Usuario'} 👋</h1>
-                <p className="text-gray-600">Bienvenido a tu panel de reciclaje</p>
+                <h1 className="text-3xl font-extrabold tracking-tight">Hola, {user?.name || 'Carlos'} 👋</h1>
+                <p className="text-slate-500 font-medium">Bienvenido a tu panel de reciclaje</p>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full h-12 w-12"
+            <button
               onClick={() => navigate('/user/profile')}
+              className="p-1 rounded-full bg-white shadow-md border-2 border-white hover:scale-105 transition-transform"
             >
-              <Avatar className="h-10 w-10 border-2 border-green-500">
-                <AvatarFallback className="bg-green-100 text-green-700 font-bold">
+              <Avatar className="h-12 w-12">
+                <AvatarFallback className="bg-emerald-100 text-emerald-700 font-bold">
                   {getInitials(user?.name)}
                 </AvatarFallback>
               </Avatar>
-            </Button>
-          </div>
+            </button>
+          </header>
 
-          {/* Fila 1: Eco-Puntos y Rango Actual (2 columnas) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            {/* Tarjeta de Eco-Puntos */}
+          {/* Fila 1: Puntos y Rango (Diseño 3D/Neumórfico) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+
+            {/* Tarjeta Puntos */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-2xl shadow-xl p-6 border-2 border-green-200"
+              initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
+              className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-[20px_20px_60px_#bebebe,-20px_-20px_60px_#ffffff] border border-emerald-50 relative overflow-hidden"
             >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-700">Eco-Puntos</h3>
-                <Award className="w-6 h-6 text-green-600" />
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-slate-500 font-bold uppercase text-xs tracking-widest mb-1">Eco-Puntos</h3>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-6xl font-black text-emerald-600 tracking-tighter">{user?.points || 26}</span>
+                    <Sparkline />
+                  </div>
+                  <p className="text-slate-400 text-sm mt-4 font-medium flex items-center gap-1">
+                    <TrendingUp className="w-4 h-4" /> +12% esta semana
+                  </p>
+                </div>
+                <div className="bg-emerald-50 p-3 rounded-xl text-emerald-600">
+                  <Award className="w-6 h-6" />
+                </div>
               </div>
-              <p className="text-5xl font-bold text-green-600 mb-2">{user?.points || 0}</p>
-              <p className="text-sm text-gray-600">Puntos acumulados</p>
             </motion.div>
 
-            {/* Tarjeta de Rango Actual */}
+            {/* Tarjeta Rango Actual */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              // 🔑 CORRECCIÓN DE SINTAXIS: Se añaden los backticks (comillas inversas)
-              className={`bg-gradient-to-br ${getRankColor(user?.rank)} rounded-2xl shadow-xl p-6 text-white`} 
+              initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
+              className={`bg-gradient-to-br ${getRankColor(user?.rank)} rounded-3xl p-8 shadow-xl text-white relative flex items-center justify-between overflow-hidden`}
             >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Rango Actual</h3>
-                <TrendingUp className="w-6 h-6" />
+              <div className="z-10">
+                <h3 className="text-white/80 font-bold uppercase text-xs tracking-widest mb-1">Rango Actual</h3>
+                <p className="text-4xl font-black mb-4 tracking-tight">{user?.rank || 'Novato'}</p>
+                <div className="bg-black/10 backdrop-blur-md rounded-full px-4 py-1.5 text-xs font-bold inline-block">
+                  55% para alcanzar Plata
+                </div>
               </div>
-              <p className="text-4xl font-bold mb-2">{user?.rank || 'Bronce'}</p>
-              <div className="bg-white/20 rounded-full h-2 mb-2">
-                <div className="bg-white rounded-full h-2" style={{ width: '45%' }}></div>
+
+              <div className="z-10">
+                <CircularProgress progress={55} rank={user?.rank || 'Nvt'} />
               </div>
-              <p className="text-sm">55% para alcanzar Plata</p>
+
+              {/* Decoración de fondo */}
+              <Zap className="absolute -bottom-4 -right-4 w-32 h-32 text-white/10 rotate-12" />
             </motion.div>
           </div>
 
-          {/* Fila 2: Acciones Rápidas */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {/* Tarjeta de Acción 1: Registrar Entrega */}
-            <motion.button
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-              onClick={() => navigate('/user/register-delivery')}
-              className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all group"
-            >
-              <div className="bg-green-100 w-14 h-14 rounded-full flex items-center justify-center mb-4 group-hover:bg-green-200 transition-colors">
-                <Package className="w-7 h-7 text-green-600" />
-              </div>
-              <h3 className="font-semibold text-lg mb-2 text-gray-800">Registrar Entrega</h3>
-              <p className="text-sm text-gray-600">Registra tu reciclaje y gana puntos</p>
-            </motion.button>
+          {/* Fila 2: Acciones Rápidas y Desafío */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
 
-            {/* Tarjeta de Acción 2: Eco-Market */}
-            <motion.button
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3 }}
-              onClick={() => navigate('/user/market')}
-              className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all group"
-            >
-              <div className="bg-emerald-100 w-14 h-14 rounded-full flex items-center justify-center mb-4 group-hover:bg-emerald-200 transition-colors">
-                <Award className="w-7 h-7 text-emerald-600" />
-              </div>
-              <h3 className="font-semibold text-lg mb-2 text-gray-800">Eco-Market</h3>
-              <p className="text-sm text-gray-600">Canjea tus puntos por premios</p>
-            </motion.button>
-
-            {/* Tarjeta de Acción 3: Mapa de Centros */}
-            <motion.button
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.4 }}
-              onClick={() => navigate('/user/map')}
-              className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all group"
-            >
-              <div className="bg-blue-100 w-14 h-14 rounded-full flex items-center justify-center mb-4 group-hover:bg-blue-200 transition-colors">
-                <MapPin className="w-7 h-7 text-blue-600" />
-              </div>
-              <h3 className="font-semibold text-lg mb-2 text-gray-800">Mapa de Centros</h3>
-              <p className="text-sm text-gray-600">Encuentra centros cerca de ti</p>
-            </motion.button>
-          </div>
-
-          {/* Fila 3: Bloque Unificado de Últimas Entregas y Tu Impacto */}
-          <div className="grid grid-cols-1 gap-6">
-            
-            {/* Contenedor Principal: Últimas Entregas + Historial */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="bg-white rounded-2xl shadow-xl p-6"
-            >
-              <div className='flex justify-between items-center mb-4'>
-                <h3 className="text-xl font-semibold text-gray-800">Actividad Reciente</h3>
-                <Button 
-                  variant="ghost" 
-                  onClick={() => navigate('/user/deliveries')}
-                  className="text-sm text-green-600 hover:text-green-700"
+            {/* Botones de acción mejorados */}
+            <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[
+                { label: 'Registrar', icon: Package, color: 'bg-orange-100 text-orange-600', path: '/user/register-delivery' },
+                { label: 'Eco-Market', icon: Store, color: 'bg-emerald-100 text-emerald-600', path: '/user/market' },
+                { label: 'Centros', icon: MapPin, color: 'bg-blue-100 text-blue-600', path: '/user/map' },
+              ].map((item, idx) => (
+                <motion.button
+                  key={idx}
+                  whileHover={{ y: -5 }}
+                  onClick={() => navigate(item.path)}
+                  className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center group hover:shadow-md transition-all"
                 >
-                  Ver historial completo
-                </Button>
-              </div>
-              
-              {/* 🎯 INSERCIÓN DE LA TABLA REAL */}
-              <LatestDeliveriesTable />
-              
-            </motion.div>
+                  <div className={`${item.color} p-4 rounded-2xl mb-3 group-hover:scale-110 transition-transform`}>
+                    <item.icon className="w-6 h-6" />
+                  </div>
+                  <span className="font-bold text-slate-700">{item.label}</span>
+                </motion.button>
+              ))}
+            </div>
 
+            {/* Nuevo: Tarjeta de Desafío Semanal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+              className="bg-white border-2 border-emerald-500/20 rounded-2xl p-6 shadow-sm relative overflow-hidden"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <Target className="w-5 h-5 text-emerald-600" />
+                <h3 className="font-bold text-slate-800">Desafío Semanal</h3>
+              </div>
+              <p className="text-sm text-slate-600 mb-4">Recicla 5kg de plástico para ganar un bonus.</p>
+              <div className="w-full bg-slate-100 h-2 rounded-full mb-2">
+                <div className="bg-emerald-500 h-2 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]" style={{ width: '70%' }}></div>
+              </div>
+              <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase">
+                <span>3.5kg / 5kg</span>
+                <span className="text-emerald-600">70%</span>
+              </div>
+            </motion.div>
           </div>
+
+          {/* Fila 3: Tabla de Actividad */}
+          <motion.section
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8"
+          >
+            <div className='flex justify-between items-center mb-8'>
+              <div>
+                <h3 className="text-xl font-black text-slate-800 tracking-tight">Actividad Reciente</h3>
+                <p className="text-sm text-slate-400">Tus últimos movimientos de reciclaje</p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => navigate('/user/deliveries')}
+                className="rounded-xl border-emerald-100 text-emerald-600 hover:bg-emerald-50 font-bold text-xs uppercase tracking-widest"
+              >
+                Ver todo <ChevronRight className="ml-2 w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="overflow-hidden rounded-2xl border border-slate-50">
+              <LatestDeliveriesTable />
+            </div>
+          </motion.section>
+
         </div>
       </div>
     </>
